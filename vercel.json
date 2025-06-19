@@ -1,23 +1,23 @@
 {
   "functions": {
     "app/api/stories/route.ts": {
-      "maxDuration": 300
+      "maxDuration": 60
     },
     "app/api/queue/status/route.ts": {
       "maxDuration": 60
     },
     "app/api/config/route.ts": {
-      "maxDuration": 30
+      "maxDuration": 60
     },
     "app/api/db/init/route.ts": {
-      "maxDuration": 120
+      "maxDuration": 60
     }
   },
   "env": {
-    "POSTGRES_URL": "@postgres_url",
+    "DATABASE_URL": "@DATABASE_URL",
     "POSTGRES_PRISMA_URL": "@postgres_prisma_url", 
-    "POSTGRES_URL_NO_SSL": "@postgres_url_no_ssl",
-    "POSTGRES_URL_NON_POOLING": "@postgres_url_non_pooling",
+    "DATABASE_URL_NO_SSL": "@DATABASE_URL_no_ssl",
+    "DATABASE_URL_NON_POOLING": "@DATABASE_URL_non_pooling",
     "POSTGRES_USER": "@postgres_user",
     "POSTGRES_PASSWORD": "@postgres_password",
     "POSTGRES_DATABASE": "@postgres_database",
