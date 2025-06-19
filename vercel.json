@@ -1,10 +1,66 @@
 {
   "functions": {
     "app/api/stories/route.ts": {
+      "maxDuration": 300
+    },
+    "app/api/queue/status/route.ts": {
       "maxDuration": 60
+    },
+    "app/api/config/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/db/init/route.ts": {
+      "maxDuration": 120
     }
   },
   "env": {
-    "OPENAI_API_KEY": "@openai_api_key"
-  }
+    "POSTGRES_URL": "@postgres_url",
+    "POSTGRES_PRISMA_URL": "@postgres_prisma_url", 
+    "POSTGRES_URL_NO_SSL": "@postgres_url_no_ssl",
+    "POSTGRES_URL_NON_POOLING": "@postgres_url_non_pooling",
+    "POSTGRES_USER": "@postgres_user",
+    "POSTGRES_PASSWORD": "@postgres_password",
+    "POSTGRES_DATABASE": "@postgres_database",
+    "POSTGRES_HOST": "@postgres_host",
+    "POSTGRES_PORT": "@postgres_port",
+    "OPENAI_API_KEY": "@openai_api_key",
+    "OPENAI_BASE_URL": "@openai_base_url",
+    "OPENAI_MODEL": "@openai_model",
+    "AI_SYSTEM_PROMPT": "@ai_system_prompt",
+    "AI_USER_PROMPT_TEMPLATE": "@ai_user_prompt_template",
+    "QUEUE_CONCURRENCY": "6",
+    "QUEUE_RETRY_ATTEMPTS": "3",
+    "QUEUE_RETRY_DELAY": "5000"
+  },
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_APP_URL": "https://xhn.vercel.app"
+    }
+  },
+  "regions": ["iad1"],
+  "rewrites": [
+    {
+      "source": "/status",
+      "destination": "/status"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods", 
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
+    }
+  ]
 }
