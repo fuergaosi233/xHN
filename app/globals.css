@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 98%;
+    --foreground: 220 8% 25%;
+    --card: 0 0% 99%;
+    --card-foreground: 220 8% 25%;
+    --popover: 0 0% 99%;
+    --popover-foreground: 220 8% 25%;
+    --primary: 220 8% 35%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 210 10% 93%;
+    --secondary-foreground: 220 8% 25%;
+    --muted: 210 10% 96%;
+    --muted-foreground: 220 5% 55%;
+    --accent: 210 10% 94%;
+    --accent-foreground: 220 8% 25%;
+    --destructive: 0 40% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 210 12% 92%;
+    --input: 210 12% 92%;
+    --ring: 220 8% 25%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 220 8% 8%;
+    --foreground: 210 10% 88%;
+    --card: 220 8% 12%;
+    --card-foreground: 210 10% 88%;
+    --popover: 220 8% 12%;
+    --popover-foreground: 210 10% 88%;
+    --primary: 210 10% 85%;
+    --primary-foreground: 220 8% 15%;
+    --secondary: 220 8% 18%;
+    --secondary-foreground: 210 10% 88%;
+    --muted: 220 8% 15%;
+    --muted-foreground: 210 5% 60%;
+    --accent: 220 8% 16%;
+    --accent-foreground: 210 10% 88%;
+    --destructive: 0 40% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 8% 20%;
+    --input: 220 8% 20%;
+    --ring: 210 10% 85%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .story-link {
+    @apply text-foreground no-underline transition-colors hover:text-muted-foreground;
+  }
+  
+  .loading-spinner {
+    border: 2px solid hsl(var(--muted));
+    border-top: 2px solid hsl(var(--primary));
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
