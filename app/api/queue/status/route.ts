@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
 import { queueManager } from '@/lib/queue'
-import { db } from '@/lib/db'
+import { getDb } from '@/lib/db'
 import { processedStories, processingQueue } from '@/lib/db/schema'
 import { sql, desc, count, avg } from 'drizzle-orm'
 
 export async function GET() {
   try {
     const queueStatus = await queueManager.getQueueStatus()
+    const db = await getDb()
     
     // 获取缓存统计
     const cacheStats = await db
@@ -71,7 +72,7 @@ export async function GET() {
         completed: qStats?.completedCount || 0,
         failed: qStats?.failedCount || 0
       },
-      recentTasks: recentTasks.map(task => ({
+      recentTasks: recentTasks.map((task: any) => ({
         ...task,
         createdAt: task.createdAt?.toISOString(),
         completedAt: task.completedAt?.toISOString(),

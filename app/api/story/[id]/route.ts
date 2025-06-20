@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { getDb } from '@/lib/db'
 import { processedStories } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 
@@ -17,6 +17,8 @@ export async function GET(
       )
     }
 
+    const db = await getDb()
+    
     // 从数据库查询单个故事
     const story = await db
       .select()
