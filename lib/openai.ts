@@ -1,10 +1,21 @@
 import OpenAI from 'openai'
 import { getCurrentModelConfig, validateModelConfig } from './config'
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-  baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
-})
+let openai: OpenAI | null = null
+
+function getOpenAIClient(): OpenAI {
+  if (!openai) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY environment variable is required')
+    }
+    
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      baseURL: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
+    })
+  }
+  return openai
+}
 
 export interface AIProcessResult {
   chineseTitle: string
@@ -49,7 +60,7 @@ export async function processWithAI(title: string, url?: string): Promise<AIProc
       .replace('{title}', title)
       .replace('{url_info}', urlInfo)
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAIClient().chat.completions.create({
       model: modelConfig.model,
       messages: [
         {

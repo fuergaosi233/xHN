@@ -13,25 +13,6 @@
       "maxDuration": 60
     }
   },
-  "env": {
-    "DATABASE_URL": "@DATABASE_URL",
-    "POSTGRES_PRISMA_URL": "@postgres_prisma_url", 
-    "DATABASE_URL_NO_SSL": "@DATABASE_URL_no_ssl",
-    "DATABASE_URL_NON_POOLING": "@DATABASE_URL_non_pooling",
-    "POSTGRES_USER": "@postgres_user",
-    "POSTGRES_PASSWORD": "@postgres_password",
-    "POSTGRES_DATABASE": "@postgres_database",
-    "POSTGRES_HOST": "@postgres_host",
-    "POSTGRES_PORT": "@postgres_port",
-    "OPENAI_API_KEY": "@openai_api_key",
-    "OPENAI_BASE_URL": "@openai_base_url",
-    "OPENAI_MODEL": "@openai_model",
-    "AI_SYSTEM_PROMPT": "@ai_system_prompt",
-    "AI_USER_PROMPT_TEMPLATE": "@ai_user_prompt_template",
-    "QUEUE_CONCURRENCY": "6",
-    "QUEUE_RETRY_ATTEMPTS": "3",
-    "QUEUE_RETRY_DELAY": "5000"
-  },
   "build": {
     "env": {
       "NEXT_PUBLIC_APP_URL": "https://xhn.vercel.app"
