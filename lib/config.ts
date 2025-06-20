@@ -9,6 +9,33 @@ export interface ModelConfig {
 }
 
 export const MODEL_CONFIGS: Record<string, ModelConfig> = {
+  'doubao-lite-4k': {
+    name: '豆包1.6 Lite 4K',
+    provider: '火山方舟',
+    baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
+    model: 'doubao-lite-4k',
+    maxTokens: 300,
+    temperature: 0.7,
+    description: '火山方舟豆包1.6轻量版，速度快成本极低，推荐日常使用'
+  },
+  'doubao-pro-4k': {
+    name: '豆包1.6 Pro 4K',
+    provider: '火山方舟',
+    baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
+    model: 'doubao-pro-4k',
+    maxTokens: 300,
+    temperature: 0.7,
+    description: '火山方舟豆包1.6专业版，质量更高，适合重要内容处理'
+  },
+  'doubao-pro-32k': {
+    name: '豆包1.6 Pro 32K',
+    provider: '火山方舟',
+    baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
+    model: 'doubao-pro-32k',
+    maxTokens: 300,
+    temperature: 0.7,
+    description: '火山方舟豆包1.6长文本版，支持32K上下文，适合长文章处理'
+  },
   'openai-gpt35': {
     name: 'GPT-3.5 Turbo',
     provider: 'OpenAI',
@@ -16,7 +43,7 @@ export const MODEL_CONFIGS: Record<string, ModelConfig> = {
     model: 'gpt-3.5-turbo',
     maxTokens: 300,
     temperature: 0.7,
-    description: 'OpenAI 官方 GPT-3.5，速度快，成本低'
+    description: 'OpenAI 官方 GPT-3.5，备用选择'
   },
   'openai-gpt4': {
     name: 'GPT-4',
@@ -43,7 +70,7 @@ export const MODEL_CONFIGS: Record<string, ModelConfig> = {
     model: 'deepseek-chat',
     maxTokens: 300,
     temperature: 0.7,
-    description: '深度求索的对话模型，性价比高'
+    description: '深度求索的对话模型，备用选择'
   },
   'moonshot-8k': {
     name: 'Moonshot v1 8K',
@@ -84,8 +111,8 @@ export const MODEL_CONFIGS: Record<string, ModelConfig> = {
 }
 
 export function getCurrentModelConfig(): ModelConfig {
-  const baseUrl = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1'
-  const model = process.env.OPENAI_MODEL || 'gpt-3.5-turbo'
+  const baseUrl = process.env.OPENAI_BASE_URL || 'https://ark.cn-beijing.volces.com/api/v3'
+  const model = process.env.OPENAI_MODEL || 'doubao-lite-4k'
   
   // 尝试从预定义配置中找到匹配的配置
   for (const config of Object.values(MODEL_CONFIGS)) {

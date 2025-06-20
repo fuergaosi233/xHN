@@ -1,14 +1,15 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import StoryCard from '@/components/StoryCard'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { ProcessedItem } from '@/lib/hackernews'
-import { TrendingUp, Star } from 'lucide-react'
+import { TrendingUp, Star, Loader2 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { useInfiniteScroll } from '@/lib/hooks/useInfiniteScroll'
 
 type TabType = 'top' | 'best'
 
@@ -31,31 +32,57 @@ interface APIResponse {
   message?: string
   processingTime?: number
   error?: string
+  page?: number
+  limit?: number
+  hasMore?: boolean
 }
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<TabType>('top')
   const [stories, setStories] = useState<ProcessedItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [apiInfo, setApiInfo] = useState<{ cached: boolean; count: number; processingCount?: number; queueStatus?: QueueStatus; message?: string; processingTime?: number } | null>(null)
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false)
+  const [currentPage, setCurrentPage] = useState(0)
+  const [hasMore, setHasMore] = useState(true)
 
-  const fetchStories = async (type: TabType, forceRefresh = false) => {
-    setLoading(true)
+  const fetchStories = async (type: TabType, page: number = 0, append: boolean = false, forceRefresh = false) => {
+    if (append) {
+      setLoadingMore(true)
+    } else {
+      setLoading(true)
+      setStories([])
+      setCurrentPage(0)
+      setHasMore(true)
+    }
     setError(null)
     
     try {
-      const url = forceRefresh 
-        ? `/api/stories?type=${type}&refresh=true` 
-        : `/api/stories?type=${type}`
+      const params = new URLSearchParams({
+        type,
+        page: page.toString(),
+        limit: '20'
+      })
       
-      const response = await fetch(url)
+      if (forceRefresh) {
+        params.append('refresh', 'true')
+      }
+      
+      const response = await fetch(`/api/stories?${params}`)
       const data: APIResponse = await response.json()
       
       if (data.success) {
-        setStories(data.data)
+        if (append) {
+          setStories(prev => [...prev, ...data.data])
+        } else {
+          setStories(data.data)
+        }
+        
+        setCurrentPage(page)
+        setHasMore(data.hasMore || false)
         setLastUpdated(new Date())
         setApiInfo({
           cached: data.cached,
@@ -72,8 +99,18 @@ export default function Home() {
       setError(err instanceof Error ? err.message : '网络错误')
     } finally {
       setLoading(false)
+      setLoadingMore(false)
     }
   }
+
+  const loadMoreStories = useCallback(() => {
+    if (!loadingMore && hasMore) {
+      fetchStories(activeTab, currentPage + 1, true)
+    }
+  }, [activeTab, currentPage, loadingMore, hasMore])
+
+  // 无限滚动hook
+  const { observe } = useInfiniteScroll(hasMore, loadingMore, loadMoreStories)
 
   useEffect(() => {
     fetchStories(activeTab)
@@ -108,7 +145,7 @@ export default function Home() {
   }
 
   const handleRefresh = () => {
-    fetchStories(activeTab, true)
+    fetchStories(activeTab, 0, false, true)
   }
 
   return (
@@ -153,11 +190,38 @@ export default function Home() {
 
           {/* Stories List */}
           {!loading && !error && stories.length > 0 && (
-            <div className="space-y-0">
-              {stories.map((story, index) => (
-                <StoryCard key={story.id} story={story} index={index} />
-              ))}
-            </div>
+            <>
+              <div className="divide-y divide-border/30">
+                {stories.map((story, index) => (
+                  <StoryCard key={story.id} story={story} index={index} />
+                ))}
+              </div>
+              
+              {/* Infinite Scroll Trigger */}
+              {hasMore && (
+                <div ref={observe} className="flex justify-center py-8">
+                  {loadingMore ? (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>加载更多文章...</span>
+                    </div>
+                  ) : (
+                    <div className="text-muted-foreground text-sm">
+                      滚动查看更多
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* End Message */}
+              {!hasMore && !loadingMore && (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground text-sm">
+                    已加载全部文章 ({stories.length} 篇)
+                  </p>
+                </div>
+              )}
+            </>
           )}
 
           {/* Empty State */}
@@ -194,11 +258,38 @@ export default function Home() {
 
           {/* Stories List */}
           {!loading && !error && stories.length > 0 && (
-            <div className="space-y-0">
-              {stories.map((story, index) => (
-                <StoryCard key={story.id} story={story} index={index} />
-              ))}
-            </div>
+            <>
+              <div className="divide-y divide-border/30">
+                {stories.map((story, index) => (
+                  <StoryCard key={story.id} story={story} index={index} />
+                ))}
+              </div>
+              
+              {/* Infinite Scroll Trigger */}
+              {hasMore && (
+                <div ref={observe} className="flex justify-center py-8">
+                  {loadingMore ? (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>加载更多文章...</span>
+                    </div>
+                  ) : (
+                    <div className="text-muted-foreground text-sm">
+                      滚动查看更多
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* End Message */}
+              {!hasMore && !loadingMore && (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground text-sm">
+                    已加载全部文章 ({stories.length} 篇)
+                  </p>
+                </div>
+              )}
+            </>
           )}
 
           {/* Empty State */}

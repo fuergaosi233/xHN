@@ -13,6 +13,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type') as 'top' | 'best' || 'top'
     const forceRefresh = searchParams.get('refresh') === 'true'
+    const page = parseInt(searchParams.get('page') || '0')
+    const limit = parseInt(searchParams.get('limit') || '20')
     
     // 检查数据库连接
     const dbCheck = await checkDbConnection()
@@ -25,10 +27,10 @@ export async function GET(request: NextRequest) {
     }
 
     // 获取 Hacker News 数据
-    console.log(`Fetching ${type} stories...`)
+    console.log(`Fetching ${type} stories, page ${page}, limit ${limit}...`)
     const storyIds = type === 'top' 
-      ? await hnAPI.getTopStories() 
-      : await hnAPI.getBestStories()
+      ? await hnAPI.getTopStories(page, limit) 
+      : await hnAPI.getBestStories(page, limit)
     
     const stories = await hnAPI.getMultipleItems(storyIds)
     
@@ -95,6 +97,9 @@ export async function GET(request: NextRequest) {
       count: sortedStories.length,
       processingCount: storiesToProcess.length,
       queueStatus,
+      page,
+      limit,
+      hasMore: sortedStories.length === limit, // 如果返回的数量等于limit，说明可能还有更多
       message: storiesToProcess.length > 0 
         ? `${storiesToProcess.length} 篇文章正在处理中，请稍后刷新查看结果`
         : '所有文章已处理完成'

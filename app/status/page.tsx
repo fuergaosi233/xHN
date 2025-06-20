@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { RefreshCw, Database, Clock, TrendingUp, CheckCircle } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import ModelInfo from '@/components/ModelInfo'
 
 interface QueueStatus {
@@ -14,8 +16,27 @@ interface QueueStatus {
   maxConcurrency: number
 }
 
+interface CacheStats {
+  totalCached: number
+  recentCached: number
+  withTranslation: number
+  avgProcessingTime: number
+  lastUpdate: string | null
+}
+
+interface QueueStats {
+  totalTasks: number
+  pending: number
+  processing: number
+  completed: number
+  failed: number
+}
+
 interface StatusData {
+  success: boolean
   queueStatus: QueueStatus
+  cacheStats: CacheStats
+  queueStats: QueueStats
   recentTasks: Array<{
     id: number
     storyId: number
@@ -40,11 +61,30 @@ export default function StatusPage() {
     try {
       const response = await fetch('/api/queue/status')
       const data = await response.json()
-      setStatusData(data)
+      if (data.success) {
+        setStatusData(data)
+      }
     } catch (error) {
       console.error('Failed to fetch status:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const formatTime = (dateString: string | null) => {
+    if (!dateString) return '从未'
+    const date = new Date(dateString)
+    const now = new Date()
+    const diff = now.getTime() - date.getTime()
+    
+    if (diff < 60000) {
+      return '刚刚'
+    } else if (diff < 3600000) {
+      return `${Math.floor(diff / 60000)} 分钟前`
+    } else if (diff < 86400000) {
+      return `${Math.floor(diff / 3600000)} 小时前`
+    } else {
+      return `${Math.floor(diff / 86400000)} 天前`
     }
   }
 
@@ -66,22 +106,77 @@ export default function StatusPage() {
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">系统状态</h1>
-        <Badge variant="outline" className="animate-pulse">
-          实时更新
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={fetchStatus}>
+            <RefreshCw className="w-4 h-4 mr-1" />
+            刷新
+          </Button>
+          <Badge variant="outline" className="animate-pulse">
+            实时更新
+          </Badge>
+        </div>
       </div>
 
       {/* Model Configuration */}
       <ModelInfo />
 
-      {/* Queue Status */}
+      {/* Cache Statistics */}
+      {statusData?.cacheStats && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Database className="w-5 h-5" />
+              <CardTitle>缓存统计</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  {statusData.cacheStats.totalCached}
+                </div>
+                <div className="text-sm text-muted-foreground">总缓存数</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {statusData.cacheStats.recentCached}
+                </div>
+                <div className="text-sm text-muted-foreground">24小时新增</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">
+                  {statusData.cacheStats.withTranslation}
+                </div>
+                <div className="text-sm text-muted-foreground">已翻译</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600">
+                  {(statusData.cacheStats.avgProcessingTime / 1000).toFixed(1)}s
+                </div>
+                <div className="text-sm text-muted-foreground">平均处理时间</div>
+              </div>
+              <div className="text-center">
+                <div className="text-sm font-medium text-gray-600">
+                  {formatTime(statusData.cacheStats.lastUpdate)}
+                </div>
+                <div className="text-sm text-muted-foreground">最后更新</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Real-time Queue Status */}
       {statusData?.queueStatus && (
         <Card>
           <CardHeader>
-            <CardTitle>处理队列状态</CardTitle>
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5" />
+              <CardTitle>实时队列状态</CardTitle>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-yellow-600">
                   {statusData.queueStatus.pending}
@@ -123,31 +218,83 @@ export default function StatusPage() {
         </Card>
       )}
 
+      {/* Historical Queue Stats */}
+      {statusData?.queueStats && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5" />
+              <CardTitle>历史队列统计</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-slate-600">
+                  {statusData.queueStats.totalTasks}
+                </div>
+                <div className="text-sm text-muted-foreground">总任务数</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {statusData.queueStats.completed}
+                </div>
+                <div className="text-sm text-muted-foreground">已完成</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-600">
+                  {statusData.queueStats.failed}
+                </div>
+                <div className="text-sm text-muted-foreground">失败</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-600">
+                  {statusData.queueStats.pending}
+                </div>
+                <div className="text-sm text-muted-foreground">等待中</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  {statusData.queueStats.processing}
+                </div>
+                <div className="text-sm text-muted-foreground">处理中</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* System Statistics */}
       {statusData?.systemInfo && (
         <Card>
           <CardHeader>
-            <CardTitle>系统统计</CardTitle>
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5" />
+              <CardTitle>系统性能统计</CardTitle>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg">
+                <div className="text-3xl font-bold text-blue-600">
                   {statusData.systemInfo.totalProcessed}
                 </div>
-                <div className="text-sm text-muted-foreground">总处理量</div>
+                <div className="text-sm text-blue-700 font-medium">总处理量</div>
+                <div className="text-xs text-blue-600 mt-1">累计翻译文章数</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold">
+              <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-lg">
+                <div className="text-3xl font-bold text-green-600">
                   {statusData.systemInfo.successRate.toFixed(1)}%
                 </div>
-                <div className="text-sm text-muted-foreground">成功率</div>
+                <div className="text-sm text-green-700 font-medium">成功率</div>
+                <div className="text-xs text-green-600 mt-1">翻译成功比例</div>
               </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold">
+              <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg">
+                <div className="text-3xl font-bold text-orange-600">
                   {statusData.systemInfo.averageProcessingTime.toFixed(1)}s
                 </div>
-                <div className="text-sm text-muted-foreground">平均处理时间</div>
+                <div className="text-sm text-orange-700 font-medium">平均处理时间</div>
+                <div className="text-xs text-orange-600 mt-1">单篇文章处理耗时</div>
               </div>
             </div>
           </CardContent>
@@ -155,22 +302,25 @@ export default function StatusPage() {
       )}
 
       {/* Recent Tasks */}
-      {statusData?.recentTasks && (
+      {statusData?.recentTasks && statusData.recentTasks.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>最近任务</CardTitle>
+            <CardTitle>最近任务 (最新20条)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {statusData.recentTasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between p-3 border rounded">
-                  <div className="flex-1">
-                    <div className="font-medium">{task.title}</div>
-                    <div className="text-sm text-muted-foreground">
-                      ID: {task.storyId}
+              {statusData.recentTasks.slice(0, 10).map((task) => (
+                <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate">{task.title}</div>
+                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                      <span>ID: {task.storyId}</span>
+                      {task.createdAt && (
+                        <span>• {formatTime(task.createdAt)}</span>
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <Badge 
                       variant={
                         task.status === 'completed' ? 'default' :
@@ -178,10 +328,12 @@ export default function StatusPage() {
                         task.status === 'failed' ? 'destructive' : 'outline'
                       }
                     >
-                      {task.status}
+                      {task.status === 'completed' ? '完成' :
+                       task.status === 'processing' ? '处理中' :
+                       task.status === 'failed' ? '失败' : task.status}
                     </Badge>
                     {task.processingTime && (
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-muted-foreground min-w-0">
                         {(task.processingTime / 1000).toFixed(1)}s
                       </span>
                     )}

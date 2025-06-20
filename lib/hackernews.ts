@@ -37,26 +37,34 @@ export class HackerNewsAPI {
     this.cache.set(key, { data, timestamp: Date.now() })
   }
 
-  async getTopStories(): Promise<number[]> {
-    const cacheKey = 'topstories'
-    const cached = this.getCachedData(cacheKey)
-    if (cached) return cached
+  async getTopStories(page: number = 0, limit: number = 20): Promise<number[]> {
+    const cacheKey = 'topstories-full'
+    let allStories = this.getCachedData(cacheKey)
+    
+    if (!allStories) {
+      const response = await axios.get(`${HN_API_BASE}/topstories.json`)
+      allStories = response.data.slice(0, 500) // Get top 500 stories
+      this.setCachedData(cacheKey, allStories)
+    }
 
-    const response = await axios.get(`${HN_API_BASE}/topstories.json`)
-    const data = response.data.slice(0, 30) // Get top 30 stories
-    this.setCachedData(cacheKey, data)
-    return data
+    const start = page * limit
+    const end = start + limit
+    return allStories.slice(start, end)
   }
 
-  async getBestStories(): Promise<number[]> {
-    const cacheKey = 'beststories'
-    const cached = this.getCachedData(cacheKey)
-    if (cached) return cached
+  async getBestStories(page: number = 0, limit: number = 20): Promise<number[]> {
+    const cacheKey = 'beststories-full'
+    let allStories = this.getCachedData(cacheKey)
+    
+    if (!allStories) {
+      const response = await axios.get(`${HN_API_BASE}/beststories.json`)
+      allStories = response.data.slice(0, 500) // Get top 500 stories
+      this.setCachedData(cacheKey, allStories)
+    }
 
-    const response = await axios.get(`${HN_API_BASE}/beststories.json`)
-    const data = response.data.slice(0, 30) // Get top 30 stories
-    this.setCachedData(cacheKey, data)
-    return data
+    const start = page * limit
+    const end = start + limit
+    return allStories.slice(start, end)
   }
 
   async getItem(id: number): Promise<HackerNewsItem | null> {

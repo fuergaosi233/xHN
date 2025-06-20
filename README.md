@@ -1,11 +1,13 @@
 # Hacker News 中文版
 
-一个现代化的 Hacker News 中文版应用，使用 AI 技术自动生成中文标题和内容摘要。
+一个现代化的 Hacker News 中文版应用，使用火山方舟豆包1.6模型自动生成中文标题和内容摘要。
+
+**Powered by Doubao-1.6**
 
 ## 功能特点
 
 - 🔥 **实时热点**：获取 Hacker News 24小时最热和最受欢迎的文章
-- 🤖 **AI 翻译**：使用 AI 自动生成有趣的中文标题和摘要
+- 🤖 **AI 翻译**：使用火山方舟豆包1.6模型自动生成有趣的中文标题和摘要
 - 🎯 **可配置 Prompt**：自定义 AI 角色和回复格式，让内容更符合你的需求
 - 🚀 **任务队列系统**：智能排队处理，防止 API 被打挂
 - 💾 **数据库缓存**：使用 PostgreSQL 缓存处理结果，24小时有效期
@@ -26,7 +28,7 @@
 - **ORM**：Drizzle ORM
 - **样式**：Tailwind CSS
 - **状态管理**：原生 React Hooks + 本地存储
-- **AI 服务**：支持多种模型 (OpenAI, DeepSeek, Moonshot, 智谱AI等)
+- **AI 服务**：火山方舟豆包1.6 (兼容 OpenAI API 格式)
 - **部署**：Vercel
 - **语言**：TypeScript
 
@@ -47,40 +49,35 @@ npm install
 
 ### 3. 配置环境变量
 
-复制 `.env.example` 为 `.env.local` 并配置你的 AI 模型：
+复制 `.env.example` 为 `.env.local` 并配置火山方舟豆包1.6：
 
 ```bash
 cp .env.example .env.local
 ```
 
-#### OpenAI 官方配置：
+#### 火山方舟豆包1.6配置（推荐）：
+```env
+OPENAI_API_KEY=your-volcengine-api-key
+OPENAI_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
+OPENAI_MODEL=doubao-lite-4k
+```
+
+> 🌋 **获取API密钥**: 访问 [火山方舟控制台](https://www.volcengine.com/product/ark) 创建应用并获取API密钥
+
+#### 其他兼容模型（可选）：
+
+**OpenAI 官方:**
 ```env
 OPENAI_API_KEY=sk-your-openai-api-key
 OPENAI_BASE_URL=https://api.openai.com/v1
 OPENAI_MODEL=gpt-3.5-turbo
 ```
 
-#### 使用其他模型提供商：
-
-**DeepSeek (推荐国内用户):**
+**DeepSeek:**
 ```env
 OPENAI_API_KEY=your-deepseek-api-key
 OPENAI_BASE_URL=https://api.deepseek.com/v1
 OPENAI_MODEL=deepseek-chat
-```
-
-**Moonshot AI (Kimi):**
-```env
-OPENAI_API_KEY=your-moonshot-api-key
-OPENAI_BASE_URL=https://api.moonshot.cn/v1
-OPENAI_MODEL=moonshot-v1-8k
-```
-
-**智谱AI:**
-```env
-OPENAI_API_KEY=your-zhipuai-api-key
-OPENAI_BASE_URL=https://open.bigmodel.cn/api/paas/v4
-OPENAI_MODEL=glm-4
 ```
 
 > 💡 **更多配置选项**: 查看 [模型配置指南](./docs/MODEL_CONFIGURATION.md) 了解所有支持的模型和详细配置说明。
@@ -125,11 +122,11 @@ npm run dev
 2. **添加 Postgres 数据库**
    - 在项目的 Storage 标签中创建 Postgres 数据库
    - 环境变量会自动注入
-3. **配置 AI 服务环境变量**
+3. **配置火山方舟豆包1.6环境变量**
    ```env
-   OPENAI_API_KEY=your_api_key
-   OPENAI_BASE_URL=https://api.openai.com/v1  
-   OPENAI_MODEL=gpt-3.5-turbo
+   OPENAI_API_KEY=your_volcengine_api_key
+   OPENAI_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
+   OPENAI_MODEL=doubao-lite-4k
    ```
 4. **部署并初始化数据库**
    - 部署完成后访问 `https://your-app.vercel.app/api/db/init` (POST请求)
@@ -148,12 +145,11 @@ npm run dev
 
 | 提供商 | 模型 | 推荐用途 | 成本 |
 |--------|------|----------|------|
-| OpenAI | GPT-3.5 Turbo | 日常使用，速度快 | 低 |
-| OpenAI | GPT-4 | 高质量翻译 | 高 |
-| OpenAI | GPT-4o | 最新模型，平衡性能 | 中 |
-| DeepSeek | deepseek-chat | 国内用户推荐 | 很低 |
-| Moonshot AI | moonshot-v1-8k/32k | Kimi，中文友好 | 低 |
-| 智谱AI | GLM-4 | 国产模型 | 低 |
+| 火山方舟 | doubao-lite-4k | **默认推荐**，豆包1.6，速度快成本低 | 很低 |
+| 火山方舟 | doubao-pro-4k | 豆包1.6专业版，质量更高 | 低 |
+| 火山方舟 | doubao-pro-32k | 豆包1.6长文本版 | 中 |
+| OpenAI | GPT-3.5 Turbo | 备用选择 | 低 |
+| DeepSeek | deepseek-chat | 备用选择 | 很低 |
 
 ## 项目结构
 
