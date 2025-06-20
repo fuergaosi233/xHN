@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const type = searchParams.get('type') as 'top' | 'best' || 'top'
+    const type = searchParams.get('type') as 'top' | 'best' | 'new' || 'top'
     const forceRefresh = searchParams.get('refresh') === 'true'
     const page = parseInt(searchParams.get('page') || '0')
     const limit = parseInt(searchParams.get('limit') || '20')
@@ -28,11 +28,18 @@ export async function GET(request: NextRequest) {
 
     // 获取 Hacker News 数据
     console.log(`Fetching ${type} stories, page ${page}, limit ${limit}...`)
-    const storyIds = type === 'top' 
-      ? await hnAPI.getTopStories(page, limit) 
-      : await hnAPI.getBestStories(page, limit)
+    let stories: any[]
     
-    const stories = await hnAPI.getMultipleItems(storyIds)
+    if (type === 'new') {
+      // 对于最新文章，直接返回已排序的结果
+      stories = await hnAPI.getNewStoriesSorted(page, limit)
+    } else {
+      const storyIds = type === 'top' 
+        ? await hnAPI.getTopStories(page, limit) 
+        : await hnAPI.getBestStories(page, limit)
+      
+      stories = await hnAPI.getMultipleItems(storyIds)
+    }
     
     // 过滤出有效的故事（有URL的）
     const validStories = stories.filter(story => story.url && story.title)

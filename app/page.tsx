@@ -4,14 +4,14 @@ import { useState, useEffect, useCallback } from 'react'
 import StoryCard from '@/components/StoryCard'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { ProcessedItem } from '@/lib/hackernews'
-import { TrendingUp, Star, Loader2 } from 'lucide-react'
+import { TrendingUp, Star, Clock, Loader2 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useInfiniteScroll } from '@/lib/hooks/useInfiniteScroll'
 
-type TabType = 'top' | 'best'
+type TabType = 'top' | 'best' | 'new'
 
 interface QueueStatus {
   pending: number
@@ -154,7 +154,7 @@ export default function Home() {
       {/* Main Content */}
       <Tabs defaultValue="top" value={activeTab} onValueChange={(value) => handleTabChange(value as TabType)}>
         <div className="flex justify-center mb-8">
-          <TabsList className="grid w-[400px] grid-cols-2">
+          <TabsList className="grid w-[600px] grid-cols-3">
             <TabsTrigger value="top" className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
               24小时最热
@@ -162,6 +162,10 @@ export default function Home() {
             <TabsTrigger value="best" className="flex items-center gap-2">
               <Star className="w-4 h-4" />
               最受欢迎
+            </TabsTrigger>
+            <TabsTrigger value="new" className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              最新文章
             </TabsTrigger>
           </TabsList>
         </div>
@@ -238,6 +242,74 @@ export default function Home() {
           {/* Loading State */}
           {loading && (
             <LoadingSpinner message="正在获取最受欢迎新闻..." />
+          )}
+
+          {/* Error State */}
+          {error && !loading && (
+            <Card className="text-center p-8">
+              <CardContent>
+                <h3 className="font-medium mb-2 text-destructive">获取数据失败</h3>
+                <p className="text-sm text-muted-foreground mb-4">{error}</p>
+                <Button
+                  onClick={() => fetchStories(activeTab)}
+                  variant="destructive"
+                >
+                  重试
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Stories List */}
+          {!loading && !error && stories.length > 0 && (
+            <>
+              <div className="divide-y divide-border/30">
+                {stories.map((story, index) => (
+                  <StoryCard key={story.id} story={story} index={index} />
+                ))}
+              </div>
+              
+              {/* Infinite Scroll Trigger */}
+              {hasMore && (
+                <div ref={observe} className="flex justify-center py-8">
+                  {loadingMore ? (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>加载更多文章...</span>
+                    </div>
+                  ) : (
+                    <div className="text-muted-foreground text-sm">
+                      滚动查看更多
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* End Message */}
+              {!hasMore && !loadingMore && (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground text-sm">
+                    已加载全部文章 ({stories.length} 篇)
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Empty State */}
+          {!loading && !error && stories.length === 0 && (
+            <Card className="text-center p-8">
+              <CardContent>
+                <p className="text-muted-foreground">暂无数据</p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="new" className="mt-6">
+          {/* Loading State */}
+          {loading && (
+            <LoadingSpinner message="正在获取最新文章..." />
           )}
 
           {/* Error State */}

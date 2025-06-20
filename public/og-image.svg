@@ -1,0 +1,46 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGradient)"/>
+  
+  <!-- Grid pattern -->
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+    </pattern>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="50%" stop-color="#16213e"/>
+      <stop offset="100%" stop-color="#0f3460"/>
+    </linearGradient>
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ff6b35"/>
+      <stop offset="100%" stop-color="#f7931e"/>
+    </linearGradient>
+  </defs>
+  
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  
+  <!-- Brain icon -->
+  <circle cx="300" cy="300" r="80" fill="url(#textGradient)" opacity="0.2"/>
+  <text x="300" y="330" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="80" fill="url(#textGradient)">🧠</text>
+  
+  <!-- Main title -->
+  <text x="500" y="280" font-family="system-ui, -apple-system, sans-serif" font-size="120" font-weight="bold" fill="url(#textGradient)">xHN</text>
+  
+  <!-- Subtitle -->
+  <text x="500" y="350" font-family="system-ui, -apple-system, sans-serif" font-size="32" fill="rgba(255,255,255,0.8)">智能科技新闻聚合平台</text>
+  <text x="500" y="400" font-family="system-ui, -apple-system, sans-serif" font-size="24" fill="rgba(255,255,255,0.6)">AI 驱动的全球技术资讯中文摘要</text>
+  
+  <!-- Features -->
+  <text x="500" y="480" font-family="system-ui, -apple-system, sans-serif" font-size="20" fill="rgba(255,255,255,0.7)">🔥 24小时最热  ⭐ 最受欢迎  🕒 最新文章</text>
+  
+  <!-- Decorative elements -->
+  <circle cx="1000" cy="150" r="4" fill="#ff6b35" opacity="0.6"/>
+  <circle cx="1050" cy="200" r="3" fill="#f7931e" opacity="0.5"/>
+  <circle cx="950" cy="100" r="2" fill="#ff6b35" opacity="0.4"/>
+  <circle cx="1100" cy="120" r="3" fill="#f7931e" opacity="0.6"/>
+  
+  <circle cx="150" cy="500" r="3" fill="#ff6b35" opacity="0.5"/>
+  <circle cx="200" cy="550" r="2" fill="#f7931e" opacity="0.4"/>
+  <circle cx="100" cy="450" r="4" fill="#ff6b35" opacity="0.6"/>
+</svg>

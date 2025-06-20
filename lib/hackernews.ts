@@ -67,6 +67,39 @@ export class HackerNewsAPI {
     return allStories.slice(start, end)
   }
 
+  async getNewStories(page: number = 0, limit: number = 20): Promise<number[]> {
+    const cacheKey = 'newstories-full'
+    let allStories = this.getCachedData(cacheKey)
+    
+    if (!allStories) {
+      const response = await axios.get(`${HN_API_BASE}/newstories.json`)
+      allStories = response.data.slice(0, 500) // Get top 500 stories
+      this.setCachedData(cacheKey, allStories)
+    }
+
+    const start = page * limit
+    const end = start + limit
+    return allStories.slice(start, end)
+  }
+
+  async getNewStoriesSorted(page: number = 0, limit: number = 20): Promise<HackerNewsItem[]> {
+    // 先获取足够多的最新文章ID
+    const storyIds = await this.getNewStories(0, Math.min(200, (page + 1) * limit + 50))
+    
+    // 获取所有文章详情
+    const stories = await this.getMultipleItems(storyIds)
+    
+    // 按时间排序（最新的在前）
+    const sortedStories = stories
+      .filter(story => story.url && story.title && story.time)
+      .sort((a, b) => b.time - a.time)
+    
+    // 分页
+    const start = page * limit
+    const end = start + limit
+    return sortedStories.slice(start, end)
+  }
+
   async getItem(id: number): Promise<HackerNewsItem | null> {
     const cacheKey = `item-${id}`
     const cached = this.getCachedData(cacheKey)
