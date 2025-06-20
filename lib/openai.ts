@@ -70,15 +70,15 @@ export async function processWithAI(title: string, url?: string): Promise<AIProc
     let response = message?.content || ''
     
     // 如果content为空但有reasoning，尝试从reasoning中提取
-    if (!response && message?.reasoning) {
-      response = message.reasoning
+    if (!response && (message as any)?.reasoning) {
+      response = (message as any).reasoning
     }
     
     // 改进的解析逻辑，支持多行匹配
-    const chineseTitleMatch = response.match(/中文标题[：:]\s*(.+?)(?=\n摘要|\n分类|$)/s)
-    const summaryMatch = response.match(/摘要[：:]\s*(.+?)(?=\n分类|\n标签|$)/s)
-    const categoryMatch = response.match(/分类[：:]\s*(.+?)(?=\n标签|$)/s)
-    const tagsMatch = response.match(/标签[：:]\s*(.+?)$/s)
+    const chineseTitleMatch = response.match(/中文标题[：:]\s*([\s\S]+?)(?=\n摘要|\n分类|$)/)
+    const summaryMatch = response.match(/摘要[：:]\s*([\s\S]+?)(?=\n分类|\n标签|$)/)
+    const categoryMatch = response.match(/分类[：:]\s*([\s\S]+?)(?=\n标签|$)/)
+    const tagsMatch = response.match(/标签[：:]\s*([\s\S]+?)$/)
     
     const chineseTitle = chineseTitleMatch?.[1]?.trim() || title
     const summary = summaryMatch?.[1]?.trim() || '暂无摘要'
