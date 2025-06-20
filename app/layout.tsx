@@ -94,7 +94,7 @@ export default function RootLayout({
                     </div>
                   </a>
                   <a 
-                    href="/rss" 
+                    href="/api/rss" 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="px-2 py-1 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-200/30 rounded-full hover:opacity-80 transition-opacity"
