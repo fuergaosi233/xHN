@@ -81,7 +81,7 @@ export default function RootLayout({
                 </p>
                 <div className="flex items-center justify-center gap-3 pt-1">
                   <a 
-                    href="https://github.com/holegots/hacknews-cn" 
+                    href="https://github.com/fuergaosi233/xhn" 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="px-2 py-1 bg-gradient-to-r from-gray-500/10 to-gray-600/10 border border-gray-200/30 rounded-full hover:opacity-80 transition-opacity"
@@ -91,6 +91,21 @@ export default function RootLayout({
                         <path d="M12 0C5.374 0 0 5.373 0 12 0 17.302 3.438 21.8 8.207 23.387c.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
                       </svg>
                       <span className="text-xs text-gray-600">GitHub</span>
+                    </div>
+                  </a>
+                  <a 
+                    href="/rss" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="px-2 py-1 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-200/30 rounded-full hover:opacity-80 transition-opacity"
+                  >
+                    <div className="flex items-center gap-1">
+                      <svg className="w-3 h-3 fill-current text-orange-600" viewBox="0 0 24 24">
+                        <path d="M4.103 4.103A10.875 10.875 0 0 0 1.5 12c0 3.014 1.235 5.737 3.228 7.696a.75.75 0 1 1-1.091 1.03A12.375 12.375 0 0 1 0 12C0 5.373 5.373 0 12 0s12 5.373 12 12-5.373 12-12 12a12.34 12.34 0 0 1-7.637-2.637.75.75 0 1 1 .94-1.175 10.84 10.84 0 0 0 6.697 2.312c6.016 0 10.875-4.859 10.875-10.875S18.016 1.125 12 1.125 1.125 6.109 1.125 12c0 3.014 1.235 5.737 3.228 7.696a.75.75 0 1 1-1.091 1.03A10.875 10.875 0 0 1 4.103 4.103z"/>
+                        <path d="M2.25 12.75a3.75 3.75 0 0 1 3.75-3.75h.75v1.5H6A2.25 2.25 0 0 0 3.75 12.75v.75H2.25v-.75z"/>
+                        <circle cx="6" cy="18" r="1.5"/>
+                      </svg>
+                      <span className="text-xs text-orange-600">RSS</span>
                     </div>
                   </a>
                   <div className="px-3 py-1 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-200/30 rounded-full">
