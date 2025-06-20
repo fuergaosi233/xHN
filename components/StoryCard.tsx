@@ -56,7 +56,7 @@ export default function StoryCard({ story, index }: StoryCardProps) {
   }
 
   return (
-    <Card className="hover:shadow-sm transition-all duration-300 border-l-0 border-r-0 border-t-0 border-b-0 last:border-b">
+    <Card className="hover:shadow-sm transition-all duration-300 border-l-0 border-r-0 border-t-0 border-b-0 last:border-b animate-fadeIn hover:scale-[1.01]">
       <CardContent className="py-6 px-6">
         <div className="space-y-4">
           {/* Title Section */}

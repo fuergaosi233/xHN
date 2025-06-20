@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import StoryCard from '@/components/StoryCard'
 import LoadingSpinner from '@/components/LoadingSpinner'
+import StoryCardSkeleton from '@/components/StoryCardSkeleton'
 import { ProcessedItem } from '@/lib/hackernews'
 import { TrendingUp, Star, Clock, Loader2 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -162,7 +163,14 @@ export default function Home() {
         <TabsContent value="top" className="mt-6">
           {/* Loading State */}
           {loading && (
-            <LoadingSpinner message="正在获取最热新闻..." />
+            <div className="space-y-4">
+              <LoadingSpinner 
+                message="正在获取最热新闻..." 
+                variant="ai" 
+                size="lg"
+              />
+              <StoryCardSkeleton count={3} />
+            </div>
           )}
 
           {/* Error State */}
@@ -230,7 +238,14 @@ export default function Home() {
         <TabsContent value="best" className="mt-6">
           {/* Loading State */}
           {loading && (
-            <LoadingSpinner message="正在获取最受欢迎新闻..." />
+            <div className="space-y-4">
+              <LoadingSpinner 
+                message="正在获取最受欢迎新闻..." 
+                variant="sparkle" 
+                size="lg"
+              />
+              <StoryCardSkeleton count={3} />
+            </div>
           )}
 
           {/* Error State */}
@@ -298,7 +313,14 @@ export default function Home() {
         <TabsContent value="new" className="mt-6">
           {/* Loading State */}
           {loading && (
-            <LoadingSpinner message="正在获取最新文章..." />
+            <div className="space-y-4">
+              <LoadingSpinner 
+                message="正在获取最新文章..." 
+                variant="default" 
+                size="lg"
+              />
+              <StoryCardSkeleton count={3} />
+            </div>
           )}
 
           {/* Error State */}
