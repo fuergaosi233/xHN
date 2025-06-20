@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useInfiniteScroll } from '@/lib/hooks/useInfiniteScroll'
+import { useStoryUpdates } from '@/lib/hooks/useStoryUpdates'
 
 type TabType = 'top' | 'best' | 'new'
 
@@ -48,6 +49,9 @@ export default function Home() {
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false)
   const [currentPage, setCurrentPage] = useState(0)
   const [hasMore, setHasMore] = useState(true)
+  
+  // 使用自动更新hook
+  const { stories: updatedStories, isChecking } = useStoryUpdates(stories)
 
   const fetchStories = async (type: TabType, page: number = 0, append: boolean = false, forceRefresh = false) => {
     if (append) {
@@ -116,29 +120,14 @@ export default function Home() {
     fetchStories(activeTab)
   }, [activeTab])
 
-  // 自动刷新逻辑：当有内容正在处理时，定期检查更新
+  // 处理计数显示逻辑（保留显示，但不自动刷新整页）
   useEffect(() => {
-    let intervalId: NodeJS.Timeout | null = null
-    let timeoutId: NodeJS.Timeout | null = null
-    
-    if (apiInfo?.processingCount && apiInfo.processingCount > 0 && !loading) {
+    if (apiInfo?.processingCount && apiInfo.processingCount > 0) {
       setAutoRefreshEnabled(true)
-      // 立即开始刷新检查
-      timeoutId = setTimeout(() => {
-        intervalId = setInterval(() => {
-          console.log('Auto-refreshing to check for translation updates...')
-          fetchStories(activeTab)
-        }, 8000) // 每8秒刷新一次，更频繁的检查
-      }, 5000) // 5秒后开始自动刷新
     } else {
       setAutoRefreshEnabled(false)
     }
-    
-    return () => {
-      if (intervalId) clearInterval(intervalId)
-      if (timeoutId) clearTimeout(timeoutId)
-    }
-  }, [apiInfo?.processingCount, loading, activeTab])
+  }, [apiInfo?.processingCount])
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab)
@@ -193,10 +182,10 @@ export default function Home() {
           )}
 
           {/* Stories List */}
-          {!loading && !error && stories.length > 0 && (
+          {!loading && !error && updatedStories.length > 0 && (
             <>
               <div className="divide-y divide-border/30">
-                {stories.map((story, index) => (
+                {updatedStories.map((story, index) => (
                   <StoryCard key={story.id} story={story} index={index} />
                 ))}
               </div>
@@ -221,7 +210,7 @@ export default function Home() {
               {!hasMore && !loadingMore && (
                 <div className="text-center py-8">
                   <p className="text-muted-foreground text-sm">
-                    已加载全部文章 ({stories.length} 篇)
+                    已加载全部文章 ({updatedStories.length} 篇)
                   </p>
                 </div>
               )}
@@ -229,7 +218,7 @@ export default function Home() {
           )}
 
           {/* Empty State */}
-          {!loading && !error && stories.length === 0 && (
+          {!loading && !error && updatedStories.length === 0 && (
             <Card className="text-center p-8">
               <CardContent>
                 <p className="text-muted-foreground">暂无数据</p>
@@ -261,10 +250,10 @@ export default function Home() {
           )}
 
           {/* Stories List */}
-          {!loading && !error && stories.length > 0 && (
+          {!loading && !error && updatedStories.length > 0 && (
             <>
               <div className="divide-y divide-border/30">
-                {stories.map((story, index) => (
+                {updatedStories.map((story, index) => (
                   <StoryCard key={story.id} story={story} index={index} />
                 ))}
               </div>
@@ -289,7 +278,7 @@ export default function Home() {
               {!hasMore && !loadingMore && (
                 <div className="text-center py-8">
                   <p className="text-muted-foreground text-sm">
-                    已加载全部文章 ({stories.length} 篇)
+                    已加载全部文章 ({updatedStories.length} 篇)
                   </p>
                 </div>
               )}
@@ -297,7 +286,7 @@ export default function Home() {
           )}
 
           {/* Empty State */}
-          {!loading && !error && stories.length === 0 && (
+          {!loading && !error && updatedStories.length === 0 && (
             <Card className="text-center p-8">
               <CardContent>
                 <p className="text-muted-foreground">暂无数据</p>
@@ -329,10 +318,10 @@ export default function Home() {
           )}
 
           {/* Stories List */}
-          {!loading && !error && stories.length > 0 && (
+          {!loading && !error && updatedStories.length > 0 && (
             <>
               <div className="divide-y divide-border/30">
-                {stories.map((story, index) => (
+                {updatedStories.map((story, index) => (
                   <StoryCard key={story.id} story={story} index={index} />
                 ))}
               </div>
@@ -357,7 +346,7 @@ export default function Home() {
               {!hasMore && !loadingMore && (
                 <div className="text-center py-8">
                   <p className="text-muted-foreground text-sm">
-                    已加载全部文章 ({stories.length} 篇)
+                    已加载全部文章 ({updatedStories.length} 篇)
                   </p>
                 </div>
               )}
@@ -365,7 +354,7 @@ export default function Home() {
           )}
 
           {/* Empty State */}
-          {!loading && !error && stories.length === 0 && (
+          {!loading && !error && updatedStories.length === 0 && (
             <Card className="text-center p-8">
               <CardContent>
                 <p className="text-muted-foreground">暂无数据</p>
