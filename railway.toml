@@ -7,9 +7,6 @@ healthcheckPath = "/api/config"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
 
-[build]
-buildCommand = "npm run build"
-
 [deploy.predeploy]
 command = "npm run migrate"
 
