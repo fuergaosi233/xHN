@@ -1,6 +1,10 @@
-# Hacker News 中文版
+# xHN - 智能科技新闻聚合平台
 
 一个现代化的 Hacker News 中文版应用，使用火山方舟豆包1.6模型自动生成中文标题和内容摘要。
+
+## 🌐 在线体验
+
+**[https://xhn.y1s1.host/](https://xhn.y1s1.host/)**
 
 **Powered by Doubao-1.6**
 
@@ -37,8 +41,8 @@
 ### 1. 克隆项目
 
 ```bash
-git clone https://github.com/holegots/hacknews-cn.git
-cd hacknews-cn
+git clone https://github.com/fuergaosi233/xhn.git
+cd xhn
 ```
 
 ### 2. 安装依赖
