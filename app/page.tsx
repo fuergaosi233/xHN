@@ -12,6 +12,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useInfiniteScroll } from '@/lib/hooks/useInfiniteScroll'
 import { useStoryUpdates } from '@/lib/hooks/useStoryUpdates'
+import { useUmami } from '@/components/Analytics'
 
 type TabType = 'top' | 'best' | 'new'
 
@@ -40,6 +41,7 @@ interface APIResponse {
 }
 
 export default function Home() {
+  const { track } = useUmami()
   const [activeTab, setActiveTab] = useState<TabType>('top')
   const [stories, setStories] = useState<ProcessedItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -132,6 +134,12 @@ export default function Home() {
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab)
+    
+    // 追踪标签页切换事件
+    track('tab_change', {
+      from_tab: activeTab,
+      to_tab: tab
+    })
   }
 
   const handleRefresh = () => {

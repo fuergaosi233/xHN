@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import { useStoryActions } from '@/lib/user'
+import { useUmami } from '@/components/Analytics'
 
 interface StoryCardProps {
   story: ProcessedItem
@@ -15,6 +16,7 @@ interface StoryCardProps {
 
 export default function StoryCard({ story, index }: StoryCardProps) {
   const { isLiked, isBookmarked, toggleLike, toggleBookmark } = useStoryActions()
+  const { track } = useUmami()
   const [liked, setLiked] = useState(false)
   const [bookmarked, setBookmarked] = useState(false)
   // 从用户管理器初始化状态
@@ -48,11 +50,44 @@ export default function StoryCard({ story, index }: StoryCardProps) {
   const handleLike = () => {
     const newLikedState = toggleLike(story.id)
     setLiked(newLikedState)
+    
+    // 追踪点赞事件
+    track('story_like', {
+      story_id: story.id,
+      story_title: story.title,
+      action: newLikedState ? 'like' : 'unlike'
+    })
   }
 
   const handleBookmark = () => {
     const newBookmarkedState = toggleBookmark(story.id)
     setBookmarked(newBookmarkedState)
+    
+    // 追踪收藏事件
+    track('story_bookmark', {
+      story_id: story.id,
+      story_title: story.title,
+      action: newBookmarkedState ? 'bookmark' : 'unbookmark'
+    })
+  }
+
+  const handleStoryClick = (type: 'title' | 'summary' | 'external') => {
+    // 追踪文章点击事件
+    track('story_click', {
+      story_id: story.id,
+      story_title: story.title,
+      click_type: type,
+      story_position: index + 1
+    })
+  }
+
+  const handleCommentClick = () => {
+    // 追踪评论点击事件
+    track('story_comment_click', {
+      story_id: story.id,
+      story_title: story.title,
+      comment_count: story.descendants
+    })
   }
 
   return (
@@ -67,6 +102,7 @@ export default function StoryCard({ story, index }: StoryCardProps) {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-primary transition-colors decoration-2 underline-offset-4 hover:underline"
+                onClick={() => handleStoryClick('title')}
               >
                 {story.chineseTitle || story.title}
               </a>
@@ -95,6 +131,7 @@ export default function StoryCard({ story, index }: StoryCardProps) {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block text-muted-foreground hover:text-foreground transition-colors duration-200"
+                onClick={() => handleStoryClick('summary')}
               >
                 <p className="text-sm leading-relaxed line-height-loose tracking-wide indent-4">
                   {story.summary}
@@ -136,6 +173,7 @@ export default function StoryCard({ story, index }: StoryCardProps) {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 hover:text-foreground transition-colors rounded-md px-2 py-1 hover:bg-accent/50"
+                  onClick={handleCommentClick}
                 >
                   <MessageCircle className="w-3.5 h-3.5" />
                   <span className="font-medium">{story.descendants}</span>
@@ -176,6 +214,7 @@ export default function StoryCard({ story, index }: StoryCardProps) {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 hover:bg-accent/70"
+                    onClick={() => handleStoryClick('external')}
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline text-xs font-medium">

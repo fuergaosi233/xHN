@@ -53,6 +53,7 @@ export const viewport: Viewport = {
 
 import { ThemeProvider } from '@/lib/hooks/useTheme'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import Analytics from '@/components/Analytics'
 
 export default function RootLayout({
   children,
@@ -131,6 +132,7 @@ export default function RootLayout({
             {children}
           </main>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   )
