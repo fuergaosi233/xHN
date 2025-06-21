@@ -144,7 +144,7 @@ export default function Home() {
       {/* Main Content */}
       <Tabs defaultValue="top" value={activeTab} onValueChange={(value) => handleTabChange(value as TabType)}>
         <div className="flex justify-center mb-8">
-          <TabsList className="grid w-[600px] grid-cols-3">
+          <TabsList className="grid w-full max-w-[600px] grid-cols-3">
             <TabsTrigger value="top" className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
               24小时最热

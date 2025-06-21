@@ -56,6 +56,10 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    overflow-x: hidden;
+  }
+  html {
+    overflow-x: hidden;
   }
 }
 
@@ -71,6 +75,21 @@
     width: 20px;
     height: 20px;
     animation: spin 1s linear infinite;
+  }
+}
+
+@layer utilities {
+  .mobile-safe {
+    box-sizing: border-box;
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+  }
+  
+  .prevent-horizontal-scroll {
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 }
 

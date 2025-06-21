@@ -56,8 +56,8 @@ export default function StoryCard({ story, index }: StoryCardProps) {
   }
 
   return (
-    <Card className="hover:shadow-sm transition-all duration-300 border-l-0 border-r-0 border-t-0 border-b-0 last:border-b animate-fadeIn hover:scale-[1.01]">
-      <CardContent className="py-6 px-6">
+    <Card className="hover:shadow-sm transition-all duration-300 border-l-0 border-r-0 border-t-0 border-b-0 last:border-b animate-fadeIn hover:scale-[1.01] mobile-safe">
+      <CardContent className="py-6 px-4 sm:px-6">
         <div className="space-y-4">
           {/* Title Section */}
           <div className="space-y-2">
@@ -114,7 +114,7 @@ export default function StoryCard({ story, index }: StoryCardProps) {
           
           {/* Meta Information & Actions */}
           <div className="flex items-center justify-between pt-2 border-t border-border/30">
-            <div className="flex items-center gap-4 text-xs text-muted-foreground/70">
+            <div className="flex items-center gap-2 sm:gap-4 text-xs text-muted-foreground/70 min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
                 <User className="w-3.5 h-3.5" />
                 <span className="font-medium">{story.by}</span>
@@ -144,7 +144,7 @@ export default function StoryCard({ story, index }: StoryCardProps) {
             </div>
             
             {/* Action Buttons */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-shrink-0">
               <Button
                 variant="ghost"
                 size="sm"

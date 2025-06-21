@@ -61,7 +61,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
-      <body>
+      <body className="prevent-horizontal-scroll">
         <ThemeProvider>
           <header className="border-b bg-card">
             <div className="max-w-4xl mx-auto px-4 py-8">
@@ -79,12 +79,12 @@ export default function RootLayout({
                 <p className="text-sm text-muted-foreground">
                   Never accept the world as it appears to be. always dare to see it for what it could be.
                 </p>
-                <div className="flex items-center justify-center gap-3 pt-1">
+                <div className="flex items-center justify-center gap-2 sm:gap-3 pt-1 flex-wrap">
                   <a 
                     href="https://github.com/fuergaosi233/xhn" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="px-2 py-1 bg-gradient-to-r from-gray-500/10 to-gray-600/10 border border-gray-200/30 rounded-full hover:opacity-80 transition-opacity"
+                    className="px-2 py-1 bg-gradient-to-r from-gray-500/10 to-gray-600/10 border border-gray-200/30 rounded-full hover:opacity-80 transition-opacity text-xs"
                   >
                     <div className="flex items-center gap-1">
                       <svg className="w-3 h-3 fill-current text-gray-600" viewBox="0 0 24 24">
@@ -97,7 +97,7 @@ export default function RootLayout({
                     href="/api/rss" 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="px-2 py-1 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-200/30 rounded-full hover:opacity-80 transition-opacity"
+                    className="px-2 py-1 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-200/30 rounded-full hover:opacity-80 transition-opacity text-xs"
                   >
                     <div className="flex items-center gap-1">
                       <svg className="w-3 h-3 fill-current text-orange-600" viewBox="0 0 24 24">
