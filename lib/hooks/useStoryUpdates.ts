@@ -71,6 +71,7 @@ export function useStoryUpdates(stories: ProcessedItem[]) {
             })
           )
         }
+      }
     } catch (error) {
       console.error('Failed to check story updates:', error)
     } finally {
