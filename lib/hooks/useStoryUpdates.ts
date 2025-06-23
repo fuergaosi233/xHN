@@ -12,9 +12,17 @@ export function useStoryUpdates(stories: ProcessedItem[]) {
   const [updatedStories, setUpdatedStories] = useState<ProcessedItem[]>(stories)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const [isChecking, setIsChecking] = useState(false)
+  const lastCheckRef = useRef<number>(0)
 
   const checkForUpdates = useCallback(async () => {
     if (isChecking || stories.length === 0) return
+
+    // 前端频率限制：至少间隔20秒才能再次请求
+    const now = Date.now()
+    if (now - lastCheckRef.current < 20000) {
+      return
+    }
+    lastCheckRef.current = now
 
     // 找出需要更新的故事（正在处理中或未翻译的）
     const storiesNeedingUpdate = stories.filter(story => 
@@ -63,7 +71,6 @@ export function useStoryUpdates(stories: ProcessedItem[]) {
             })
           )
         }
-      }
     } catch (error) {
       console.error('Failed to check story updates:', error)
     } finally {
@@ -85,10 +92,10 @@ export function useStoryUpdates(stories: ProcessedItem[]) {
       // 立即检查一次
       checkForUpdates()
       
-      // 然后每15秒检查一次
+      // 然后每45秒检查一次（从15秒延长到45秒）
       intervalRef.current = setInterval(() => {
         checkForUpdates()
-      }, 15000)
+      }, 45000)
     } else if (!hasProcessingStories && intervalRef.current) {
       clearInterval(intervalRef.current)
       intervalRef.current = null
