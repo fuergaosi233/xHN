@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useInfiniteScroll } from '@/lib/hooks/useInfiniteScroll'
-import { useStoryUpdates } from '@/lib/hooks/useStoryUpdates'
+import { useWebSocketUpdates } from '@/lib/hooks/useWebSocketUpdates'
 import { useUmami } from '@/components/Analytics'
 
 type TabType = 'top' | 'best' | 'new'
@@ -53,8 +53,9 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState(0)
   const [hasMore, setHasMore] = useState(true)
   
-  // 使用自动更新hook
-  const { stories: updatedStories, isChecking } = useStoryUpdates(stories)
+  // 使用WebSocket自动更新hook
+  const roomType = activeTab === 'top' ? 'top-stories' : activeTab === 'new' ? 'new-stories' : 'best-stories'
+  const { stories: updatedStories, isConnected, connectionError } = useWebSocketUpdates(stories, roomType)
 
   const fetchStories = async (type: TabType, page: number = 0, append: boolean = false, forceRefresh = false) => {
     if (append) {
@@ -166,6 +167,21 @@ export default function Home() {
               最新文章
             </TabsTrigger>
           </TabsList>
+        </div>
+
+        {/* WebSocket连接状态 */}
+        {connectionError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-center">
+            <p className="text-red-700 text-sm">
+              实时更新连接失败: {connectionError}
+            </p>
+          </div>
+        )}
+        
+        <div className="flex justify-center mb-4">
+          <Badge variant={isConnected ? "default" : "secondary"} className="text-xs">
+            {isConnected ? "🟢 实时更新已连接" : "🔴 实时更新未连接"}
+          </Badge>
         </div>
 
         <TabsContent value="top" className="mt-6">

@@ -3,6 +3,7 @@ import { processingQueue, processedStories, ProcessingQueue } from './db/schema'
 import { processWithAI } from './openai'
 import { eq, and, lt, desc, asc, sql, gt } from 'drizzle-orm'
 import { HackerNewsItem } from './hackernews'
+import { wsManager, StoryUpdateEvent } from './websocket'
 
 export interface QueueTask {
   id: number
@@ -179,6 +180,7 @@ class QueueManager {
     const database = await getDb()
     const expiresAt = new Date()
     expiresAt.setHours(expiresAt.getHours() + 24) // 24小时后过期
+    const now = new Date()
 
     await database.insert(processedStories)
       .values({
@@ -202,10 +204,26 @@ class QueueManager {
           tags: result.tags ? { tags: result.tags } : null,
           processingTime: result.processingTime,
           modelUsed: result.modelUsed,
-          updatedAt: new Date(),
+          updatedAt: now,
           expiresAt
         }
       })
+
+    // 广播WebSocket更新事件
+    try {
+      const updateEvent: StoryUpdateEvent = {
+        storyId: task.storyId,
+        title: task.title,
+        chineseTitle: result.chineseTitle,
+        summary: result.summary,
+        updatedAt: now.toISOString(),
+        processingTime: result.processingTime
+      }
+
+      wsManager.broadcastStoryUpdate(updateEvent)
+    } catch (error) {
+      console.error('Failed to broadcast story update:', error)
+    }
   }
 
   // 获取缓存结果

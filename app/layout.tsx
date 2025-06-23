@@ -54,6 +54,7 @@ export const viewport: Viewport = {
 import { ThemeProvider } from '@/lib/hooks/useTheme'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import Analytics from '@/components/Analytics'
+import { WebSocketProvider } from '@/components/WebSocketProvider'
 
 export default function RootLayout({
   children,
@@ -64,7 +65,8 @@ export default function RootLayout({
     <html lang="zh-CN" suppressHydrationWarning>
       <body className="prevent-horizontal-scroll">
         <ThemeProvider>
-          <header className="border-b bg-card">
+          <WebSocketProvider>
+            <header className="border-b bg-card">
             <div className="max-w-4xl mx-auto px-4 py-8">
               <div className="relative">
                 <div className="absolute top-0 right-0">
@@ -128,9 +130,10 @@ export default function RootLayout({
               </div>
             </div>
           </header>
-          <main className="max-w-4xl mx-auto px-4 py-8">
-            {children}
-          </main>
+            <main className="max-w-4xl mx-auto px-4 py-8">
+              {children}
+            </main>
+          </WebSocketProvider>
         </ThemeProvider>
         <Analytics />
       </body>
