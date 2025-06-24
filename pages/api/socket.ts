@@ -54,6 +54,11 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponseWithSocket) => {
     })
 
     res.socket.server.io = io
+    
+    // 设置全局Socket.IO实例
+    if (typeof global !== 'undefined') {
+      (global as any).socketio = io
+    }
   }
   
   res.end()

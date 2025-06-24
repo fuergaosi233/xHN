@@ -169,20 +169,6 @@ export default function Home() {
           </TabsList>
         </div>
 
-        {/* WebSocket连接状态 */}
-        {connectionError && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-center">
-            <p className="text-red-700 text-sm">
-              实时更新连接失败: {connectionError}
-            </p>
-          </div>
-        )}
-        
-        <div className="flex justify-center mb-4">
-          <Badge variant={isConnected ? "default" : "secondary"} className="text-xs">
-            {isConnected ? "🟢 实时更新已连接" : "🔴 实时更新未连接"}
-          </Badge>
-        </div>
 
         <TabsContent value="top" className="mt-6">
           {/* Loading State */}
