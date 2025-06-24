@@ -17,6 +17,8 @@ export interface ProcessedItem extends HackerNewsItem {
   summary?: string
   cached: boolean
   processingTime: number
+  isUpdated?: boolean // 标记是否刚刚更新，用于动画效果
+  updatedAt?: number // 更新时间戳
 }
 
 const HN_API_BASE = 'https://hacker-news.firebaseio.com/v0'

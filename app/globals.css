@@ -138,6 +138,30 @@
   }
 }
 
+@keyframes contentUpdate {
+  0% {
+    background-color: hsl(var(--primary) / 0.1);
+    transform: scale(1);
+  }
+  50% {
+    background-color: hsl(var(--primary) / 0.2);
+    transform: scale(1.01);
+  }
+  100% {
+    background-color: transparent;
+    transform: scale(1);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 5px hsl(var(--primary) / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.5), 0 0 30px hsl(var(--primary) / 0.3);
+  }
+}
+
 .animate-fadeIn {
   animation: fadeIn 0.5s ease-out;
 }
@@ -159,4 +183,12 @@
 
 .animate-float {
   animation: float 3s ease-in-out infinite;
+}
+
+.animate-contentUpdate {
+  animation: contentUpdate 0.8s ease-in-out;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
 }

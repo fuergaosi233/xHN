@@ -22,6 +22,29 @@ export function useWebSocketUpdates(stories: ProcessedItem[], roomType: 'top-sto
   const [connectionError, setConnectionError] = useState<string | null>(null)
   const socketRef = useRef<Socket | null>(null)
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const cleanupTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // 清理更新标记的函数
+  const clearUpdateFlags = useCallback(() => {
+    setUpdatedStories(prevStories => 
+      prevStories.map(story => ({
+        ...story,
+        isUpdated: false,
+        updatedAt: undefined
+      }))
+    )
+  }, [])
+
+  // 设置自动清理定时器
+  const scheduleCleanup = useCallback(() => {
+    if (cleanupTimerRef.current) {
+      clearTimeout(cleanupTimerRef.current)
+    }
+    
+    cleanupTimerRef.current = setTimeout(() => {
+      clearUpdateFlags()
+    }, 5000) // 5秒后清理更新标记
+  }, [clearUpdateFlags])
 
   const applyStoryUpdate = useCallback((update: StoryUpdateEvent) => {
     setUpdatedStories(prevStories => 
@@ -32,13 +55,16 @@ export function useWebSocketUpdates(stories: ProcessedItem[], roomType: 'top-sto
             chineseTitle: update.chineseTitle,
             summary: update.summary,
             cached: true,
-            processingTime: update.processingTime
+            processingTime: update.processingTime,
+            isUpdated: true, // 添加更新标记用于动画
+            updatedAt: Date.now() // 记录更新时间
           }
         }
         return story
       })
     )
-  }, [])
+    scheduleCleanup() // 设置清理定时器
+  }, [scheduleCleanup])
 
   const applyBatchUpdate = useCallback((batchUpdate: BatchUpdateEvent) => {
     setUpdatedStories(prevStories => {
@@ -52,13 +78,16 @@ export function useWebSocketUpdates(stories: ProcessedItem[], roomType: 'top-sto
             chineseTitle: update.chineseTitle,
             summary: update.summary,
             cached: true,
-            processingTime: update.processingTime
+            processingTime: update.processingTime,
+            isUpdated: true, // 添加更新标记用于动画
+            updatedAt: Date.now() // 记录更新时间
           }
         }
         return story
       })
     })
-  }, [])
+    scheduleCleanup() // 设置清理定时器
+  }, [scheduleCleanup])
 
   const connectWebSocket = useCallback(() => {
     if (socketRef.current?.connected) {
@@ -154,6 +183,10 @@ export function useWebSocketUpdates(stories: ProcessedItem[], roomType: 'top-sto
 
     return () => {
       disconnectWebSocket()
+      if (cleanupTimerRef.current) {
+        clearTimeout(cleanupTimerRef.current)
+        cleanupTimerRef.current = null
+      }
     }
   }, [stories, connectWebSocket, disconnectWebSocket])
 

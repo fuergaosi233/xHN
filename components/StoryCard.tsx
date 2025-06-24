@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ProcessedItem } from '@/lib/hackernews'
 import { ExternalLink, Clock, User, MessageCircle, Heart, Bookmark } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
@@ -19,11 +19,53 @@ export default function StoryCard({ story, index }: StoryCardProps) {
   const { track } = useUmami()
   const [liked, setLiked] = useState(false)
   const [bookmarked, setBookmarked] = useState(false)
+  const [isAnimating, setIsAnimating] = useState(false)
+  const [showUpdateBadge, setShowUpdateBadge] = useState(false)
+  const previousStoryRef = useRef<ProcessedItem | null>(null)
+  
   // 从用户管理器初始化状态
   useEffect(() => {
     setLiked(isLiked(story.id))
     setBookmarked(isBookmarked(story.id))
   }, [story.id, isLiked, isBookmarked])
+
+  // 检测内容更新并触发动画
+  useEffect(() => {
+    const previousStory = previousStoryRef.current
+    if (previousStory && previousStory.id === story.id) {
+      // 检测标题或摘要是否发生变化
+      const titleChanged = previousStory.chineseTitle !== story.chineseTitle
+      const summaryChanged = previousStory.summary !== story.summary
+      
+      if ((titleChanged || summaryChanged) && story.isUpdated) {
+        setIsAnimating(true)
+        setShowUpdateBadge(true)
+        
+        // 动画结束后重置状态
+        setTimeout(() => {
+          setIsAnimating(false)
+        }, 600)
+        
+        // 更新徽章显示3秒后消失
+        setTimeout(() => {
+          setShowUpdateBadge(false)
+        }, 3000)
+      }
+    }
+    
+    previousStoryRef.current = story
+  }, [story.chineseTitle, story.summary, story.isUpdated])
+  
+  // 清理更新标记
+  useEffect(() => {
+    if (story.isUpdated && story.updatedAt) {
+      const timeSinceUpdate = Date.now() - story.updatedAt
+      if (timeSinceUpdate > 5000) { // 5秒后清理标记
+        // 这里可以通过父组件传递的回调来清理标记
+        // 或者依赖外部状态管理
+      }
+    }
+  }, [story.isUpdated, story.updatedAt])
   
   const formatTime = (timestamp: number) => {
     const now = Date.now() / 1000
@@ -91,12 +133,31 @@ export default function StoryCard({ story, index }: StoryCardProps) {
   }
 
   return (
-    <Card className="hover:shadow-sm transition-all duration-300 border-l-0 border-r-0 border-t-0 border-b-0 last:border-b animate-fadeIn hover:scale-[1.01] mobile-safe">
-      <CardContent className="py-6 px-4 sm:px-6">
+    <Card className={cn(
+      "hover:shadow-sm transition-all duration-300 border-l-0 border-r-0 border-t-0 border-b-0 last:border-b animate-fadeIn hover:scale-[1.01] mobile-safe",
+      isAnimating && "animate-contentUpdate animate-glow",
+      story.isUpdated && "ring-2 ring-primary/30 ring-offset-2 ring-offset-background"
+    )}>
+      <CardContent className="py-6 px-4 sm:px-6 relative">
+        {/* 更新徽章 */}
+        {showUpdateBadge && (
+          <div className="absolute top-2 right-2 z-10">
+            <Badge 
+              variant="default" 
+              className="animate-bounce bg-primary text-primary-foreground text-xs px-2 py-1 shadow-lg"
+            >
+              ✨ 已更新
+            </Badge>
+          </div>
+        )}
+        
         <div className="space-y-4">
           {/* Title Section */}
           <div className="space-y-2">
-            <h2 className="text-xl font-medium text-foreground leading-relaxed">
+            <h2 className={cn(
+              "text-xl font-medium text-foreground leading-relaxed transition-all duration-500",
+              isAnimating && "scale-[1.02] text-primary"
+            )}>
               <a 
                 href={story.url || `https://news.ycombinator.com/item?id=${story.id}`}
                 target="_blank"
@@ -125,7 +186,10 @@ export default function StoryCard({ story, index }: StoryCardProps) {
           
           {/* Summary */}
           {story.summary && story.summary !== '暂无摘要' && story.summary !== '正在处理中...' && (
-            <div className="group">
+            <div className={cn(
+              "group transition-all duration-500",
+              isAnimating && "bg-accent/30 rounded-lg p-3 -m-3 shadow-sm"
+            )}>
               <a 
                 href={story.url || `https://news.ycombinator.com/item?id=${story.id}`}
                 target="_blank"
@@ -133,7 +197,10 @@ export default function StoryCard({ story, index }: StoryCardProps) {
                 className="block text-muted-foreground hover:text-foreground transition-colors duration-200"
                 onClick={() => handleStoryClick('summary')}
               >
-                <p className="text-sm leading-relaxed line-height-loose tracking-wide indent-4">
+                <p className={cn(
+                  "text-sm leading-relaxed line-height-loose tracking-wide indent-4 transition-all duration-500",
+                  isAnimating && "text-foreground font-medium"
+                )}>
                   {story.summary}
                 </p>
               </a>

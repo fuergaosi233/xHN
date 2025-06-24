@@ -94,7 +94,7 @@ class WebSocketManager {
     const rooms = io.sockets.adapter.rooms
     const roomStats: Record<string, number> = {}
     
-    rooms.forEach((sockets, roomName) => {
+    rooms.forEach((sockets: Set<any>, roomName: string) => {
       if (['top-stories', 'new-stories', 'best-stories'].includes(roomName)) {
         roomStats[roomName] = sockets.size
       }
@@ -116,10 +116,46 @@ export const wsManager = new WebSocketManager()
 
 // Next.js API路由辅助函数
 export function initializeWebSocket(res: NextApiResponse) {
-  if (!res.socket.server.io) {
+  const socket = res.socket as any
+  if (!socket?.server?.io) {
     console.log('Initializing WebSocket server...')
-    const httpServer = res.socket.server as any
-    res.socket.server.io = wsManager.initialize(httpServer)
+    const httpServer = socket?.server
+    if (httpServer) {
+      const io = new SocketIOServer(httpServer, {
+        path: '/api/socket',
+        addTrailingSlash: false,
+        cors: {
+          origin: process.env.NODE_ENV === 'production' 
+            ? process.env.NEXTAUTH_URL || false 
+            : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+          methods: ['GET', 'POST']
+        }
+      })
+
+      io.on('connection', (socket) => {
+        console.log(`Socket connected: ${socket.id}`)
+
+        socket.on('join-room', (room: string) => {
+          if (['top-stories', 'new-stories', 'best-stories'].includes(room)) {
+            socket.join(room)
+            console.log(`Socket ${socket.id} joined room: ${room}`)
+            socket.emit('room-joined', room)
+          }
+        })
+
+        socket.on('leave-room', (room: string) => {
+          socket.leave(room)
+          console.log(`Socket ${socket.id} left room: ${room}`)
+        })
+
+        socket.on('disconnect', (reason) => {
+          console.log(`Socket disconnected: ${socket.id}, reason: ${reason}`)
+        })
+      })
+
+      httpServer.io = io
+      wsManager.setGlobalIO(io)
+    }
   }
-  return res.socket.server.io
+  return socket?.server?.io
 }
