@@ -47,22 +47,26 @@ class WebSocketManager {
   broadcastStoryUpdate(update: StoryUpdateEvent, rooms: string[] = ['top-stories', 'new-stories', 'best-stories']) {
     const io = this.io || this.getGlobalIO()
     if (!io) {
-      console.log('No Socket.IO instance available for broadcasting')
+      // 静默忽略，不打印错误日志，因为可能没有客户端连接
       return
     }
 
-    rooms.forEach(room => {
-      io.to(room).emit('story-updated', update)
-    })
-    
-    console.log(`Broadcasted story update for story ${update.storyId} to rooms: ${rooms.join(', ')}`)
+    try {
+      rooms.forEach(room => {
+        io.to(room).emit('story-updated', update)
+      })
+      
+      console.log(`Broadcasted story update for story ${update.storyId} to rooms: ${rooms.join(', ')}`)
+    } catch (error) {
+      console.error('Failed to broadcast story update:', error)
+    }
   }
 
   // 广播批量更新
   broadcastBatchUpdate(updates: StoryUpdateEvent[], rooms: string[] = ['top-stories', 'new-stories', 'best-stories']) {
     const io = this.io || this.getGlobalIO()
     if (!io || updates.length === 0) {
-      console.log('No Socket.IO instance available for batch broadcasting')
+      // 静默忽略
       return
     }
 
@@ -71,11 +75,15 @@ class WebSocketManager {
       count: updates.length
     }
 
-    rooms.forEach(room => {
-      io.to(room).emit('batch-updated', batchEvent)
-    })
+    try {
+      rooms.forEach(room => {
+        io.to(room).emit('batch-updated', batchEvent)
+      })
 
-    console.log(`Broadcasted batch update of ${updates.length} stories to rooms: ${rooms.join(', ')}`)
+      console.log(`Broadcasted batch update of ${updates.length} stories to rooms: ${rooms.join(', ')}`)
+    } catch (error) {
+      console.error('Failed to broadcast batch update:', error)
+    }
   }
 
   // 获取连接统计
