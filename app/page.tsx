@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useInfiniteScroll } from '@/lib/hooks/useInfiniteScroll'
+import { useStoryUpdates } from '@/lib/hooks/useStoryUpdates'
 import { useWebSocketUpdates } from '@/lib/hooks/useWebSocketUpdates'
 import { useUmami } from '@/components/Analytics'
 
@@ -53,9 +54,12 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState(0)
   const [hasMore, setHasMore] = useState(true)
   
-  // 使用WebSocket自动更新hook
+  // 使用轮询更新hook (保持原有的轮询机制)
+  const { stories: pollingUpdatedStories, isChecking } = useStoryUpdates(stories)
+  
+  // 使用WebSocket增强更新hook (在轮询基础上添加实时更新)
   const roomType = activeTab === 'top' ? 'top-stories' : activeTab === 'new' ? 'new-stories' : 'best-stories'
-  const { stories: updatedStories, isConnected, connectionError } = useWebSocketUpdates(stories, roomType)
+  const { stories: updatedStories, isConnected, connectionError } = useWebSocketUpdates(pollingUpdatedStories, roomType)
 
   const fetchStories = async (type: TabType, page: number = 0, append: boolean = false, forceRefresh = false) => {
     if (append) {

@@ -27,11 +27,11 @@ export function useWebSocketUpdates(stories: ProcessedItem[], roomType: 'top-sto
   // 清理更新标记的函数
   const clearUpdateFlags = useCallback(() => {
     setUpdatedStories(prevStories => 
-      prevStories.map(story => ({
-        ...story,
-        isUpdated: false,
-        updatedAt: undefined
-      }))
+      prevStories.map(story => {
+        // 只清理动画相关的标记，保留其他所有数据
+        const { isUpdated, updatedAt, ...restStory } = story
+        return restStory
+      })
     )
   }, [])
 
