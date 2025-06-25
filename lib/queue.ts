@@ -178,9 +178,8 @@ class QueueManager {
   // 保存处理结果到缓存
   private async saveResult(task: ProcessingQueue, result: ProcessingResult) {
     const database = await getDb()
-    const expiresAt = new Date()
-    expiresAt.setHours(expiresAt.getHours() + 24) // 24小时后过期
     const now = new Date()
+    const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000) // 24小时后过期
 
     await database.insert(processedStories)
       .values({
@@ -231,6 +230,9 @@ class QueueManager {
     try {
       const database = await getDb()
       const now = new Date()
+      
+      console.log(`Checking cache for story ${storyId}, current time: ${now.toISOString()}`)
+      
       const [cached] = await database.select()
         .from(processedStories)
         .where(and(
@@ -238,6 +240,24 @@ class QueueManager {
           gt(processedStories.expiresAt, now)
         ))
         .limit(1)
+
+      if (cached) {
+        console.log(`Found cached result for story ${storyId}: title="${cached.chineseTitle}", expires=${cached.expiresAt}`)
+      } else {
+        console.log(`No valid cache found for story ${storyId}`)
+        
+        // 检查是否有过期的缓存
+        const [expiredCache] = await database.select()
+          .from(processedStories)
+          .where(eq(processedStories.storyId, storyId))
+          .limit(1)
+        
+        if (expiredCache) {
+          console.log(`Found expired cache for story ${storyId}: expires=${expiredCache.expiresAt}`)
+        } else {
+          console.log(`No cache record found at all for story ${storyId}`)
+        }
+      }
 
       return cached || null
     } catch (error) {
