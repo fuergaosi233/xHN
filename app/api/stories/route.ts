@@ -29,7 +29,6 @@ export async function GET(request: NextRequest) {
     }
 
     // 获取 Hacker News 数据
-    console.log(`Fetching ${type} stories, page ${page}, limit ${limit}...`)
     let stories: any[]
     
     if (type === 'new') {
@@ -62,7 +61,7 @@ export async function GET(request: NextRequest) {
       .from(processedStories)
       .where(inArray(processedStories.storyId, storyIds))
       
-      console.log(`Found ${existingTranslations.length} existing translations out of ${storyIds.length} stories`)
+      // Found existing translations from database
     }
     
     // 创建翻译数据映射
@@ -102,10 +101,7 @@ export async function GET(request: NextRequest) {
     
     // 将需要翻译的故事添加到处理队列
     if (storiesToProcess.length > 0) {
-      console.log(`Adding ${storiesToProcess.length} stories to processing queue`)
       await queueManager.addBatchTasks(storiesToProcess, type === 'top' ? 1 : 0)
-      
-      // 启动队列处理器
       queueManager.startProcessor()
     }
     

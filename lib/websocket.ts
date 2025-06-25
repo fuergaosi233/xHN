@@ -55,8 +55,6 @@ class WebSocketManager {
       rooms.forEach(room => {
         io.to(room).emit('story-updated', update)
       })
-      
-      console.log(`Broadcasted story update for story ${update.storyId} to rooms: ${rooms.join(', ')}`)
     } catch (error) {
       console.error('Failed to broadcast story update:', error)
     }
@@ -79,8 +77,6 @@ class WebSocketManager {
       rooms.forEach(room => {
         io.to(room).emit('batch-updated', batchEvent)
       })
-
-      console.log(`Broadcasted batch update of ${updates.length} stories to rooms: ${rooms.join(', ')}`)
     } catch (error) {
       console.error('Failed to broadcast batch update:', error)
     }
@@ -118,7 +114,6 @@ export const wsManager = new WebSocketManager()
 export function initializeWebSocket(res: NextApiResponse) {
   const socket = res.socket as any
   if (!socket?.server?.io) {
-    console.log('Initializing WebSocket server...')
     const httpServer = socket?.server
     if (httpServer) {
       const io = new SocketIOServer(httpServer, {
@@ -133,23 +128,19 @@ export function initializeWebSocket(res: NextApiResponse) {
       })
 
       io.on('connection', (socket) => {
-        console.log(`Socket connected: ${socket.id}`)
-
         socket.on('join-room', (room: string) => {
           if (['top-stories', 'new-stories', 'best-stories'].includes(room)) {
             socket.join(room)
-            console.log(`Socket ${socket.id} joined room: ${room}`)
             socket.emit('room-joined', room)
           }
         })
 
         socket.on('leave-room', (room: string) => {
           socket.leave(room)
-          console.log(`Socket ${socket.id} left room: ${room}`)
         })
 
-        socket.on('disconnect', (reason) => {
-          console.log(`Socket disconnected: ${socket.id}, reason: ${reason}`)
+        socket.on('disconnect', () => {
+          // Silent disconnect
         })
       })
 

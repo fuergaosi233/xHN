@@ -105,40 +105,31 @@ export function useWebSocketUpdates(stories: ProcessedItem[], roomType: 'top-sto
       })
 
       socket.on('connect', () => {
-        console.log('WebSocket connected')
         setIsConnected(true)
         setConnectionError(null)
-        
-        // 加入对应的房间
         socket.emit('join-room', roomType)
       })
 
-      socket.on('room-joined', (room: string) => {
-        console.log(`Joined room: ${room}`)
+      socket.on('room-joined', () => {
+        // Room joined successfully
       })
 
       socket.on('story-updated', (update: StoryUpdateEvent) => {
-        console.log('Received story update:', update)
         applyStoryUpdate(update)
       })
 
       socket.on('batch-updated', (batchUpdate: BatchUpdateEvent) => {
-        console.log('Received batch update:', batchUpdate)
         applyBatchUpdate(batchUpdate)
       })
 
       socket.on('disconnect', (reason) => {
-        console.log('WebSocket disconnected:', reason)
         setIsConnected(false)
-        
-        // 如果是服务器端断开，尝试重连
         if (reason === 'io server disconnect') {
           setTimeout(() => socket.connect(), 5000)
         }
       })
 
       socket.on('connect_error', (error) => {
-        console.error('WebSocket connection error:', error)
         setConnectionError(error.message)
         setIsConnected(false)
       })

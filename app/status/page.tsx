@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { RefreshCw, Database, Clock, TrendingUp, CheckCircle } from 'lucide-react'
+import { RefreshCw, Database, Clock, TrendingUp, CheckCircle, Bug, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import ModelInfo from '@/components/ModelInfo'
 
@@ -56,6 +56,10 @@ interface StatusData {
 export default function StatusPage() {
   const [statusData, setStatusData] = useState<StatusData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [debugMode, setDebugMode] = useState(false)
+  const [cachedData, setCachedData] = useState<any>(null)
+  const [storyId, setStoryId] = useState('')
+  const [storyDebugData, setStoryDebugData] = useState<any>(null)
 
   const fetchStatus = async () => {
     try {
@@ -68,6 +72,28 @@ export default function StatusPage() {
       console.error('Failed to fetch status:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchCachedData = async () => {
+    try {
+      const response = await fetch('/api/status/cached')
+      const data = await response.json()
+      setCachedData(data)
+    } catch (error) {
+      console.error('Failed to fetch cached data:', error)
+    }
+  }
+
+  const fetchStoryDebug = async () => {
+    if (!storyId.trim()) return
+    try {
+      const response = await fetch(`/api/status/story/${storyId.trim()}`)
+      const data = await response.json()
+      setStoryDebugData(data)
+    } catch (error) {
+      console.error('Failed to fetch story debug data:', error)
+      setStoryDebugData({ success: false, error: 'Failed to fetch data' })
     }
   }
 
@@ -110,6 +136,14 @@ export default function StatusPage() {
           <Button variant="outline" size="sm" onClick={fetchStatus}>
             <RefreshCw className="w-4 h-4 mr-1" />
             刷新
+          </Button>
+          <Button 
+            variant={debugMode ? "default" : "outline"} 
+            size="sm" 
+            onClick={() => setDebugMode(!debugMode)}
+          >
+            <Bug className="w-4 h-4 mr-1" />
+            调试模式
           </Button>
           <Badge variant="outline" className="animate-pulse">
             实时更新
@@ -343,6 +377,100 @@ export default function StatusPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Debug Section */}
+      {debugMode && (
+        <>
+          {/* Database Cache Debug */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Database className="w-5 h-5" />
+                <CardTitle>数据库缓存调试</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Button onClick={fetchCachedData} variant="outline">
+                  <Database className="w-4 h-4 mr-2" />
+                  查询缓存数据
+                </Button>
+                
+                {cachedData && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-3 bg-green-50 rounded-lg">
+                        <div className="text-2xl font-bold text-green-600">
+                          {cachedData.valid?.count || 0}
+                        </div>
+                        <div className="text-sm text-green-700">有效缓存</div>
+                      </div>
+                      <div className="text-center p-3 bg-blue-50 rounded-lg">
+                        <div className="text-2xl font-bold text-blue-600">
+                          {cachedData.all?.count || 0}
+                        </div>
+                        <div className="text-sm text-blue-700">总缓存记录</div>
+                      </div>
+                    </div>
+                    
+                    {cachedData.valid?.data && cachedData.valid.data.length > 0 && (
+                      <div>
+                        <h4 className="font-medium mb-2">最近有效缓存记录：</h4>
+                        <div className="space-y-2 max-h-60 overflow-y-auto">
+                          {cachedData.valid.data.slice(0, 5).map((item: any, index: number) => (
+                            <div key={index} className="p-2 border rounded text-sm">
+                              <div className="font-medium">ID: {item.storyId}</div>
+                              <div className="text-gray-600 truncate">{item.chineseTitle || item.title}</div>
+                              <div className="text-xs text-gray-500">
+                                过期时间: {new Date(item.expiresAt).toLocaleString()}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Story Debug */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Search className="w-5 h-5" />
+                <CardTitle>文章缓存查询</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <input
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="输入文章ID (例如: 42123456)"
+                    value={storyId}
+                    onChange={(e) => setStoryId(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && fetchStoryDebug()}
+                  />
+                  <Button onClick={fetchStoryDebug} variant="outline">
+                    <Search className="w-4 h-4 mr-2" />
+                    查询
+                  </Button>
+                </div>
+                
+                {storyDebugData && (
+                  <div className="p-4 border rounded-lg bg-gray-50">
+                    <pre className="text-sm overflow-auto">
+                      {JSON.stringify(storyDebugData, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </>
       )}
     </div>
   )
