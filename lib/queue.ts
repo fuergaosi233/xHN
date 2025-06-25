@@ -231,8 +231,6 @@ class QueueManager {
       const database = await getDb()
       const now = new Date()
       
-      console.log(`Checking cache for story ${storyId}, current time: ${now.toISOString()}`)
-      
       const [cached] = await database.select()
         .from(processedStories)
         .where(and(
@@ -240,24 +238,6 @@ class QueueManager {
           gt(processedStories.expiresAt, now)
         ))
         .limit(1)
-
-      if (cached) {
-        console.log(`Found cached result for story ${storyId}: title="${cached.chineseTitle}", expires=${cached.expiresAt}`)
-      } else {
-        console.log(`No valid cache found for story ${storyId}`)
-        
-        // 检查是否有过期的缓存
-        const [expiredCache] = await database.select()
-          .from(processedStories)
-          .where(eq(processedStories.storyId, storyId))
-          .limit(1)
-        
-        if (expiredCache) {
-          console.log(`Found expired cache for story ${storyId}: expires=${expiredCache.expiresAt}`)
-        } else {
-          console.log(`No cache record found at all for story ${storyId}`)
-        }
-      }
 
       return cached || null
     } catch (error) {

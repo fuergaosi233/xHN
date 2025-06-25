@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { HackerNewsAPI, ProcessedItem } from '@/lib/hackernews'
 import { queueManager } from '@/lib/queue'
-import { checkDbConnection } from '@/lib/db'
+import { checkDbConnection, getDb } from '@/lib/db'
+import { processedStories } from '@/lib/db/schema'
+import { inArray } from 'drizzle-orm'
 
 const hnAPI = new HackerNewsAPI()
 
@@ -44,40 +46,51 @@ export async function GET(request: NextRequest) {
     // 过滤出有效的故事（有URL的）
     const validStories = stories.filter(story => story.url && story.title)
     
-    // 检查缓存并收集需要处理的故事
-    const processedStories: ProcessedItem[] = []
+    // 直接从数据库获取已翻译的故事数据
+    const storyIds = validStories.map(story => story.id)
+    const database = await getDb()
+    
+    // 批量查询数据库中已有的翻译数据
+    let existingTranslations: any[] = []
+    if (!forceRefresh && storyIds.length > 0) {
+      existingTranslations = await database.select({
+        storyId: processedStories.storyId,
+        chineseTitle: processedStories.chineseTitle,
+        summary: processedStories.summary,
+        processingTime: processedStories.processingTime,
+      })
+      .from(processedStories)
+      .where(inArray(processedStories.storyId, storyIds))
+      
+      console.log(`Found ${existingTranslations.length} existing translations out of ${storyIds.length} stories`)
+    }
+    
+    // 创建翻译数据映射
+    const translationMap = new Map()
+    existingTranslations.forEach(translation => {
+      translationMap.set(translation.storyId, translation)
+    })
+    
+    // 处理故事列表
+    const finalStories: ProcessedItem[] = []
     const storiesToProcess: typeof validStories = []
     
     for (const story of validStories) {
-      if (!forceRefresh) {
-        // 检查是否已缓存
-        const cached = await queueManager.getCachedResult(story.id)
-        if (cached) {
-          processedStories.push({
-            ...story,
-            chineseTitle: cached.chineseTitle || story.title,
-            summary: cached.summary || '暂无摘要',
-            cached: true,
-            processingTime: cached.processingTime || 0
-          })
-          continue
-        }
-      }
+      const translation = translationMap.get(story.id)
       
-      storiesToProcess.push(story)
-    }
-    
-    // 将未缓存的故事添加到处理队列
-    if (storiesToProcess.length > 0) {
-      console.log(`Adding ${storiesToProcess.length} stories to processing queue`)
-      await queueManager.addBatchTasks(storiesToProcess, type === 'top' ? 1 : 0)
-      
-      // 启动队列处理器
-      queueManager.startProcessor()
-      
-      // 对于未缓存的故事，返回原始标题
-      for (const story of storiesToProcess) {
-        processedStories.push({
+      if (translation && translation.chineseTitle && translation.summary) {
+        // 使用数据库中的翻译数据
+        finalStories.push({
+          ...story,
+          chineseTitle: translation.chineseTitle,
+          summary: translation.summary,
+          cached: true,
+          processingTime: translation.processingTime || 0
+        })
+      } else {
+        // 需要翻译的故事
+        storiesToProcess.push(story)
+        finalStories.push({
           ...story,
           chineseTitle: story.title,
           summary: '正在处理中...',
@@ -87,12 +100,17 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // 按原始顺序排序
-    const sortedStories = processedStories.sort((a, b) => {
-      const aIndex = validStories.findIndex(s => s.id === a.id)
-      const bIndex = validStories.findIndex(s => s.id === b.id)
-      return aIndex - bIndex
-    })
+    // 将需要翻译的故事添加到处理队列
+    if (storiesToProcess.length > 0) {
+      console.log(`Adding ${storiesToProcess.length} stories to processing queue`)
+      await queueManager.addBatchTasks(storiesToProcess, type === 'top' ? 1 : 0)
+      
+      // 启动队列处理器
+      queueManager.startProcessor()
+    }
+    
+    // 按原始顺序排序 (finalStories已经按照validStories的顺序构建，所以不需要额外排序)
+    const sortedStories = finalStories
     
     // 获取队列状态
     const queueStatus = await queueManager.getQueueStatus()
