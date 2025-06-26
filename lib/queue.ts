@@ -18,6 +18,8 @@ export interface ProcessingResult {
   summary: string
   category?: string
   tags?: string[]
+  content?: string
+  originalContent?: string
   processingTime: number
   modelUsed: string
 }
@@ -140,6 +142,8 @@ class QueueManager {
         summary: result.summary,
         category: result.category,
         tags: result.tags,
+        content: result.content,
+        originalContent: result.originalContent,
         processingTime,
         modelUsed: process.env.OPENAI_MODEL || 'unknown'
       })
@@ -189,6 +193,7 @@ class QueueManager {
         chineseTitle: result.chineseTitle,
         summary: result.summary,
         category: result.category,
+        content: result.originalContent || result.content, // Store original content for DB
         tags: result.tags ? { tags: result.tags } : null,
         processingTime: result.processingTime,
         modelUsed: result.modelUsed,
@@ -200,6 +205,7 @@ class QueueManager {
           chineseTitle: result.chineseTitle,
           summary: result.summary,
           category: result.category,
+          content: result.originalContent || result.content,
           tags: result.tags ? { tags: result.tags } : null,
           processingTime: result.processingTime,
           modelUsed: result.modelUsed,
