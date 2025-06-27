@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { wsManager } from '@/lib/websocket'
+import { log } from '@/lib/logger'
 
 export async function GET() {
   // 获取WebSocket连接统计
@@ -20,7 +21,7 @@ export async function POST() {
       message: 'WebSocket endpoint ready'
     })
   } catch (error) {
-    console.error('WebSocket endpoint error:', error)
+    log.error('WebSocket endpoint error in /api/socketio:', error)
     return NextResponse.json({
       success: false,
       error: 'WebSocket operation failed'

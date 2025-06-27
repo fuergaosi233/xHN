@@ -3,6 +3,7 @@ import { queueManager } from '@/lib/queue'
 import { getDb } from '@/lib/db'
 import { processedStories, processingQueue } from '@/lib/db/schema'
 import { sql, desc, count, avg } from 'drizzle-orm'
+import { log } from '@/lib/logger'
 
 export async function GET() {
   try {
@@ -84,7 +85,7 @@ export async function GET() {
       }
     })
   } catch (error) {
-    console.error('Queue status error:', error)
+    log.error('Queue status API error', { error })
     return NextResponse.json({
       success: false,
       error: 'Failed to get queue status',
@@ -103,7 +104,7 @@ export async function POST() {
       message: 'Queue processor started'
     })
   } catch (error) {
-    console.error('Queue processor start error:', error)
+    log.error('Queue processor start error', { error })
     return NextResponse.json({
       success: false,
       error: 'Failed to start queue processor',

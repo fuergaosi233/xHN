@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { log } from './logger'
 
 export interface HackerNewsItem {
   id: number
@@ -113,7 +114,7 @@ export class HackerNewsAPI {
       this.setCachedData(cacheKey, data)
       return data
     } catch (error) {
-      console.error(`Failed to fetch item ${id}:`, error)
+      log.error('Failed to fetch HackerNews item', { itemId: id, error })
       return null
     }
   }

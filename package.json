@@ -17,7 +17,13 @@
     "db:status": "./scripts/db-manager.sh status",
     "db:connect": "./scripts/db-manager.sh connect",
     "db:backup": "./scripts/db-manager.sh backup",
-    "db:reset": "./scripts/db-manager.sh reset"
+    "db:reset": "./scripts/db-manager.sh reset",
+    "logs:setup": "./scripts/log-manager.sh setup",
+    "logs:status": "./scripts/log-manager.sh status",
+    "logs:clean": "./scripts/log-manager.sh clean",
+    "logs:rotate": "./scripts/log-manager.sh rotate",
+    "logs:tail": "./scripts/log-manager.sh tail",
+    "logs:search": "./scripts/log-manager.sh search"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.0.5",
@@ -44,7 +50,8 @@
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "tailwind-merge": "^2.5.4",
-    "tailwindcss": "^3.4.1"
+    "tailwindcss": "^3.4.1",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "@rspack/cli": "^1.0.8",

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getDb, checkDbConnection } from '@/lib/db'
 import { sql } from 'drizzle-orm'
+import { log } from '@/lib/logger'
 
 export async function POST() {
   try {
@@ -101,7 +102,7 @@ export async function POST() {
     })
 
   } catch (error) {
-    console.error('Database initialization failed:', error)
+    log.error('Database initialization failed in /api/db/init:', error)
     return NextResponse.json({
       success: false,
       error: 'Database initialization failed',
@@ -141,7 +142,7 @@ export async function GET() {
     })
 
   } catch (error) {
-    console.error('Database status check failed:', error)
+    log.error('Database status check failed in /api/db/init:', error)
     return NextResponse.json({
       success: false,
       status: 'error',

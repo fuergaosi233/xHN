@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { processedStories, ProcessedStory } from '@/lib/db/schema'
 import { inArray, and, isNotNull } from 'drizzle-orm'
+import { log } from '@/lib/logger'
 
 // 强制此路由为动态
 export const dynamic = 'force-dynamic'
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
       updates
     })
   } catch (error) {
-    console.error('Story updates check error:', error)
+    log.error('Story updates check error in /api/stories/updates:', error)
     return NextResponse.json(
       { error: 'Failed to check story updates' },
       { status: 500 }

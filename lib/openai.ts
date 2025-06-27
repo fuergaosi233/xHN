@@ -2,6 +2,7 @@ import OpenAI from 'openai'
 import { getCurrentModelConfig, validateModelConfig } from './config'
 import axios from 'axios'
 import { JSDOM } from 'jsdom'
+import { log } from './logger'
 
 let openai: OpenAI | null = null
 
@@ -105,7 +106,7 @@ async function fetchWebContent(url: string): Promise<WebContentResult> {
       cleanedContent,
     }
   } catch (error) {
-    console.error('Failed to fetch web content:', error)
+    log.error('Failed to fetch web content', { error, url })
     return {
       title: '',
       content: '',
@@ -128,13 +129,13 @@ export async function processWithAI(title: string, url?: string): Promise<AIProc
     // Fetch web content if URL is provided
     let webContent: WebContentResult | null = null
     if (url) {
-      console.log(`Fetching content from: ${url}`)
+      log.info('Fetching web content', { url })
       webContent = await fetchWebContent(url)
       
       if (webContent.error) {
-        console.warn(`Failed to fetch content from ${url}: ${webContent.error}`)
+        log.warn('Failed to fetch content from URL', { url, error: webContent.error })
       } else {
-        console.log(`Successfully fetched content. Title: ${webContent.title.substring(0, 100)}...`)
+        log.info('Successfully fetched web content', { url, title: webContent.title.substring(0, 100), contentLength: webContent.cleanedContent.length })
       }
     }
     
@@ -231,7 +232,7 @@ export async function processWithAI(title: string, url?: string): Promise<AIProc
       originalContent: webContent?.content
     }
   } catch (error) {
-    console.error('AI processing failed:', error)
+    log.error('AI processing failed', { error, title, url, model: process.env.OPENAI_MODEL })
     return {
       chineseTitle: title,
       summary: '处理失败，暂无摘要'

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getCurrentModelConfig, validateModelConfig, MODEL_CONFIGS } from '@/lib/config'
+import { log } from '@/lib/logger'
 
 export async function GET() {
   try {
@@ -20,7 +21,7 @@ export async function GET() {
       }
     })
   } catch (error) {
-    console.error('Config API Error:', error)
+    log.error('Config API Error in /api/config:', error)
     return NextResponse.json(
       {
         success: false,

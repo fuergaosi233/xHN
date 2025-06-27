@@ -11,12 +11,15 @@
 ## 功能特点
 
 - 🔥 **实时热点**：获取 Hacker News 24小时最热和最受欢迎的文章
-- 🤖 **AI 翻译**：使用火山方舟豆包1.6模型自动生成有趣的中文标题和摘要
-- 🎯 **可配置 Prompt**：自定义 AI 角色和回复格式，让内容更符合你的需求
+- 🤖 **AI 翻译**：支持多种 AI 模型（OpenAI、DeepSeek、火山方舟等）自动生成中文标题和摘要
+- 🌐 **智能内容分析**：自动抓取并分析网页内容，生成更准确的摘要
+- ⚡ **实时更新**：WebSocket 实时推送翻译完成的内容，无需手动刷新
+- 🎯 **可配置 Prompt**：自定义 AI 角色和回复格式，支持基于实际内容的增强型提示
 - 🚀 **任务队列系统**：智能排队处理，防止 API 被打挂
 - 💾 **数据库缓存**：使用 PostgreSQL 缓存处理结果，24小时有效期
 - 🔄 **并发控制**：支持多篇文章同时处理，提升效率
-- 📊 **实时监控**：队列状态、处理进度实时可见
+- 📊 **高级监控**：完整的系统状态监控和调试工具（/status 页面）
+- 📡 **RSS 支持**：支持 RSS 订阅，包含中文摘要内容
 - 💖 **点赞收藏**：支持文章点赞和收藏功能（本地存储）
 - 🎨 **现代化 UI**：使用 shadcn/ui 构建的简洁美观界面
 - 📚 **阅读优化**：专为阅读体验设计的版面布局
@@ -137,13 +140,27 @@ npm run dev
 
 ## API 路由
 
+### 核心功能 API
 - `GET /api/stories?type=top` - 获取24小时最热文章
 - `GET /api/stories?type=best` - 获取最受欢迎文章
+- `POST /api/stories/updates` - 检查故事更新状态
+- `GET /api/story/[id]` - 获取单个故事详情
+
+### 配置和系统信息
 - `GET /api/config` - 获取当前模型配置信息
 - `GET /api/queue/status` - 获取队列处理状态
 - `POST /api/queue/status` - 启动队列处理器
 - `GET /api/db/init` - 检查数据库状态
 - `POST /api/db/init` - 初始化数据库表结构
+
+### 实时通信和订阅
+- `GET /api/socketio` - 获取 WebSocket 连接统计
+- `POST /api/socketio` - 管理 WebSocket 服务
+- `GET /api/rss?type=top&limit=50` - 获取 RSS feed（支持中文摘要）
+
+### 高级监控和调试
+- `GET /api/status/cached` - 获取详细缓存统计信息
+- `GET /api/status/story/[id]` - 获取单个故事的调试信息
 
 ## 支持的 AI 模型
 
@@ -160,16 +177,47 @@ npm run dev
 ```
 ├── app/                    # Next.js 应用目录
 │   ├── api/               # API 路由
+│   │   ├── config/        # 配置相关 API
+│   │   ├── db/            # 数据库管理 API
+│   │   ├── queue/         # 队列状态 API
+│   │   ├── rss/           # RSS 订阅 API
+│   │   ├── socketio/      # WebSocket 管理 API
+│   │   ├── status/        # 系统状态和调试 API
+│   │   ├── stories/       # 文章获取和更新 API
+│   │   └── story/         # 单个文章 API
+│   ├── status/            # 系统状态监控页面
 │   ├── globals.css        # 全局样式
 │   ├── layout.tsx         # 根布局
 │   └── page.tsx           # 首页
 ├── components/            # React 组件
+│   ├── ui/                # shadcn/ui 基础组件
+│   ├── Analytics.tsx      # 分析组件
+│   ├── LoadingSpinner.tsx # 加载组件
+│   ├── ModelInfo.tsx      # 模型信息组件
 │   ├── StoryCard.tsx      # 文章卡片组件
-│   └── LoadingSpinner.tsx # 加载组件
+│   ├── ThemeToggle.tsx    # 主题切换组件
+│   └── WebSocketProvider.tsx # WebSocket 提供者
 ├── lib/                   # 工具库
+│   ├── db/                # 数据库相关
+│   │   ├── migrations/    # 数据库迁移文件
+│   │   ├── index.ts       # 数据库连接
+│   │   └── schema.ts      # 数据库模式
+│   ├── hooks/             # React Hooks
+│   │   ├── useInfiniteScroll.ts    # 无限滚动
+│   │   ├── useStoryUpdates.ts      # 故事更新管理
+│   │   ├── useTheme.tsx            # 主题管理
+│   │   └── useWebSocketUpdates.ts  # WebSocket 实时更新
+│   ├── cache.ts           # 缓存管理
+│   ├── config.ts          # 配置管理（支持11种AI模型）
 │   ├── hackernews.ts      # Hacker News API
-│   ├── openai.ts          # OpenAI 集成
-│   └── cache.ts           # 缓存管理
+│   ├── openai.ts          # AI 集成（含网页内容抓取）
+│   ├── queue.ts           # 任务队列系统
+│   ├── user.ts            # 用户管理
+│   ├── utils.ts           # 工具函数
+│   └── websocket.ts       # WebSocket 管理
+├── docs/                  # 项目文档
+├── scripts/               # 脚本工具
+├── pages/api/             # Socket.io 支持
 └── public/                # 静态文件
 ```
 
@@ -199,6 +247,35 @@ npm run db:reset
 # 启动数据库浏览器
 npm run db:studio
 ```
+
+### 日志管理命令
+
+```bash
+# 设置日志目录和配置
+npm run logs:setup
+
+# 查看日志状态和统计
+npm run logs:status
+
+# 清理旧日志文件
+npm run logs:clean
+
+# 手动轮转大日志文件
+npm run logs:rotate
+
+# 实时查看日志 (可指定类型: error, combined, access)
+npm run logs:tail [日志类型]
+
+# 搜索日志内容
+npm run logs:search <关键词> [日志类型]
+```
+
+**日志类型说明：**
+- `error` - 错误日志
+- `combined` - 综合日志
+- `access` - API 访问日志
+- `exceptions` - 未捕获异常
+- `rejections` - Promise 拒绝
 
 ### 数据库配置
 

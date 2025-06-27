@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { queueManager } from '@/lib/queue'
+import { log } from '@/lib/logger'
 
 export async function GET(
   request: NextRequest,
@@ -27,7 +28,7 @@ export async function GET(
     })
     
   } catch (error) {
-    console.error('Debug Story API Error:', error)
+    log.error('Debug Story API Error in /api/status/story/[id]:', { storyId: params.id, error })
     return NextResponse.json(
       {
         success: false,

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { processedStories } from '@/lib/db/schema'
 import { desc, gt, sql } from 'drizzle-orm'
+import { log } from '@/lib/logger'
 
 export async function GET() {
   try {
@@ -54,7 +55,7 @@ export async function GET() {
     })
     
   } catch (error) {
-    console.error('Debug API Error:', error)
+    log.error('Debug API Error in /api/status/cached:', error)
     return NextResponse.json(
       {
         success: false,

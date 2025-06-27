@@ -4,6 +4,7 @@ import { processWithAI } from './openai'
 import { eq, and, lt, desc, asc, sql, gt } from 'drizzle-orm'
 import { HackerNewsItem } from './hackernews'
 import { wsManager, StoryUpdateEvent } from './websocket'
+import { log } from './logger'
 
 export interface QueueTask {
   id: number
@@ -67,10 +68,10 @@ class QueueManager {
         })
         .returning({ id: processingQueue.id })
 
-      console.log(`Added task ${newTask.id} for story ${story.id}: ${story.title}`)
+      log.queue('task_added', { taskId: newTask.id, storyId: story.id, title: story.title })
       return newTask.id
     } catch (error) {
-      console.error('Failed to add task to queue:', error)
+      log.error('Failed to add task to queue', { error, storyId: story.id })
       throw error
     }
   }
@@ -86,7 +87,7 @@ class QueueManager {
           taskIds.push(taskId)
         }
       } catch (error) {
-        console.error(`Failed to add story ${story.id} to queue:`, error)
+        log.error('Failed to add story to batch queue', { error, storyId: story.id })
       }
     }
     
@@ -105,7 +106,7 @@ class QueueManager {
 
       return task || null
     } catch (error) {
-      console.error('Failed to get next task:', error)
+      log.error('Failed to get next task', { error })
       return null
     }
   }
@@ -158,11 +159,11 @@ class QueueManager {
         })
         .where(eq(processingQueue.id, task.id))
 
-      console.log(`Task ${task.id} completed in ${processingTime}ms`)
+      log.queue('task_completed', { taskId: task.id, storyId: task.storyId, processingTime })
       return true
 
     } catch (error) {
-      console.error(`Task ${task.id} failed:`, error)
+      log.error('Task processing failed', { taskId: task.id, storyId: task.storyId, error, attempts: (task.attempts || 0) + 1 })
       
       // 更新任务状态为失败
       await database.update(processingQueue)
@@ -227,7 +228,7 @@ class QueueManager {
 
       wsManager.broadcastStoryUpdate(updateEvent)
     } catch (error) {
-      console.error('Failed to broadcast story update:', error)
+      log.error('Failed to broadcast story update', { error, storyId: task.storyId })
     }
   }
 
@@ -247,7 +248,7 @@ class QueueManager {
 
       return cached || null
     } catch (error) {
-      console.error('Failed to get cached result:', error)
+      log.error('Failed to get cached result', { error, storyId })
       return null
     }
   }
@@ -265,7 +266,7 @@ class QueueManager {
 
     // 异步处理任务
     this.processTask(task).catch(error => {
-      console.error('Task processing error:', error)
+      log.error('Task processing error', { error })
     })
 
     // 如果还有处理能力，继续启动处理器
@@ -299,7 +300,7 @@ class QueueManager {
         maxConcurrency: this.maxConcurrency
       }
     } catch (error) {
-      console.error('Failed to get queue status:', error)
+      log.error('Failed to get queue status', { error })
       return {
         pending: 0,
         processing: 0,
@@ -321,10 +322,10 @@ class QueueManager {
       const result = await database.delete(processingQueue)
         .where(lt(processingQueue.createdAt, cutoffDate))
 
-      console.log(`Cleaned up ${result.rowCount} old tasks`)
+      log.info('Queue cleanup completed', { cleanedTasks: result.rowCount || 0, daysOld })
       return result.rowCount || 0
     } catch (error) {
-      console.error('Failed to cleanup old tasks:', error)
+      log.error('Failed to cleanup old tasks', { error, daysOld })
       return 0
     }
   }

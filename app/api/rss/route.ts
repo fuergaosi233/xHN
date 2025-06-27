@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { processedStories, ProcessedStory } from '@/lib/db/schema'
 import { desc, and, isNotNull } from 'drizzle-orm'
+import { log } from '@/lib/logger'
 
 // 强制此路由为动态
 export const dynamic = 'force-dynamic'
@@ -84,7 +85,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('RSS generation error:', error)
+    log.error('RSS generation error in /api/rss:', { type, limit, error })
     return NextResponse.json(
       { error: 'Failed to generate RSS feed' },
       { status: 500 }

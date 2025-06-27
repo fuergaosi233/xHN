@@ -73,7 +73,30 @@ OPENAI_MODEL=moonshot-v1-32k
 
 **获取 API Key:** [Moonshot AI 开放平台](https://platform.moonshot.cn/)
 
-### 4. 智谱AI (GLM)
+### 4. 火山方舟（字节跳动）
+
+**豆包 Lite 4K（推荐）:**
+```env
+OPENAI_API_KEY=your-volcengine-api-key
+OPENAI_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
+OPENAI_MODEL=doubao-lite-4k
+```
+
+**豆包 Pro 4K:**
+```env
+OPENAI_API_KEY=your-volcengine-api-key
+OPENAI_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
+OPENAI_MODEL=doubao-pro-4k
+```
+
+**特点:**
+- 豆包 1.6 模型，速度快成本低
+- 中文理解能力强
+- 国内访问稳定
+
+**获取 API Key:** [火山方舟控制台](https://www.volcengine.com/product/ark)
+
+### 5. 智谱AI (GLM)
 
 ```env
 OPENAI_API_KEY=your-zhipuai-api-key
@@ -87,6 +110,29 @@ OPENAI_MODEL=glm-4
 - 价格实惠
 
 **获取 API Key:** [智谱AI 开放平台](https://open.bigmodel.cn/)
+
+### 6. Claude (Anthropic)
+
+```env
+OPENAI_API_KEY=your-anthropic-api-key
+OPENAI_BASE_URL=https://api.anthropic.com/v1
+OPENAI_MODEL=claude-3-sonnet-20240229
+```
+
+**特点:**
+- 高质量文本生成
+- 优秀的中文理解
+- 安全性较高
+
+**获取 API Key:** [Anthropic Console](https://console.anthropic.com/)
+
+### 7. 其他支持的模型
+
+项目还支持以下模型提供商：
+- **通义千问 (Qwen)**
+- **文心一言 (Baidu)**
+- **OpenRouter (多模型聚合)**
+- **本地部署模型 (Ollama)**
 
 ## 配置建议
 

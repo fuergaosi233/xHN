@@ -1,6 +1,7 @@
 import { Server as SocketIOServer } from 'socket.io'
 import { Server as HTTPServer } from 'http'
 import { NextApiResponse } from 'next'
+import { log } from './logger'
 
 export interface StoryUpdateEvent {
   storyId: number
@@ -29,7 +30,7 @@ class WebSocketManager {
           return (global as any).socketio
         }
       } catch (error) {
-        console.error('Failed to get global Socket.IO instance:', error)
+        log.error('Failed to get global Socket.IO instance', { error })
       }
     }
     return null
@@ -56,7 +57,7 @@ class WebSocketManager {
         io.to(room).emit('story-updated', update)
       })
     } catch (error) {
-      console.error('Failed to broadcast story update:', error)
+      log.error('Failed to broadcast story update', { error, updateStoryId: update.storyId, rooms })
     }
   }
 
@@ -78,7 +79,7 @@ class WebSocketManager {
         io.to(room).emit('batch-updated', batchEvent)
       })
     } catch (error) {
-      console.error('Failed to broadcast batch update:', error)
+      log.error('Failed to broadcast batch update', { error, updateCount: updates.length, rooms })
     }
   }
 

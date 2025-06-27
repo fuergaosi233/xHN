@@ -4,6 +4,7 @@ import { queueManager } from '@/lib/queue'
 import { checkDbConnection, getDb } from '@/lib/db'
 import { processedStories } from '@/lib/db/schema'
 import { inArray } from 'drizzle-orm'
+import { log } from '@/lib/logger'
 
 const hnAPI = new HackerNewsAPI()
 
@@ -127,7 +128,7 @@ export async function GET(request: NextRequest) {
     })
     
   } catch (error) {
-    console.error('API Error:', error)
+    log.error('Stories API Error in /api/stories:', { type, page, limit, error })
     return NextResponse.json(
       {
         success: false,

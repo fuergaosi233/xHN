@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { processedStories } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
+import { log } from '@/lib/logger'
 
 export async function GET(
   request: NextRequest,
@@ -92,7 +93,7 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('Error fetching story:', error)
+    log.error('Error fetching story in /api/story/[id]:', { storyId: params.id, error })
     return NextResponse.json(
       { 
         success: false, 
