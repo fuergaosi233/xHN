@@ -12,12 +12,13 @@ const hnAPI = new HackerNewsAPI()
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url)
+  const type = searchParams.get('type') as 'top' | 'best' | 'new' || 'top'
+  const forceRefresh = searchParams.get('refresh') === 'true'
+  const page = parseInt(searchParams.get('page') || '0')
+  const limit = parseInt(searchParams.get('limit') || '20')
+  
   try {
-    const { searchParams } = new URL(request.url)
-    const type = searchParams.get('type') as 'top' | 'best' | 'new' || 'top'
-    const forceRefresh = searchParams.get('refresh') === 'true'
-    const page = parseInt(searchParams.get('page') || '0')
-    const limit = parseInt(searchParams.get('limit') || '20')
     
     // 检查数据库连接
     const dbCheck = await checkDbConnection()
@@ -128,7 +129,7 @@ export async function GET(request: NextRequest) {
     })
     
   } catch (error) {
-    log.error('Stories API Error in /api/stories:', { type, page, limit, error })
+    log.error('Stories API Error in /api/stories:', { type, page, limit, error: error instanceof Error ? error : new Error(String(error)) })
     return NextResponse.json(
       {
         success: false,

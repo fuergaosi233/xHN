@@ -71,7 +71,7 @@ class QueueManager {
       log.queue('task_added', { taskId: newTask.id, storyId: story.id, title: story.title })
       return newTask.id
     } catch (error) {
-      log.error('Failed to add task to queue', { error, storyId: story.id })
+      log.error('Failed to add task to queue', { error: error instanceof Error ? error : new Error(String(error)), storyId: story.id })
       throw error
     }
   }
@@ -87,7 +87,7 @@ class QueueManager {
           taskIds.push(taskId)
         }
       } catch (error) {
-        log.error('Failed to add story to batch queue', { error, storyId: story.id })
+        log.error('Failed to add story to batch queue', { error: error instanceof Error ? error : new Error(String(error)), storyId: story.id })
       }
     }
     
@@ -106,7 +106,7 @@ class QueueManager {
 
       return task || null
     } catch (error) {
-      log.error('Failed to get next task', { error })
+      log.error('Failed to get next task', { error: error instanceof Error ? error : new Error(String(error)) })
       return null
     }
   }
@@ -163,7 +163,7 @@ class QueueManager {
       return true
 
     } catch (error) {
-      log.error('Task processing failed', { taskId: task.id, storyId: task.storyId, error, attempts: (task.attempts || 0) + 1 })
+      log.error('Task processing failed', { taskId: task.id, storyId: task.storyId, error: error instanceof Error ? error : new Error(String(error)), attempts: (task.attempts || 0) + 1 })
       
       // 更新任务状态为失败
       await database.update(processingQueue)
@@ -228,7 +228,7 @@ class QueueManager {
 
       wsManager.broadcastStoryUpdate(updateEvent)
     } catch (error) {
-      log.error('Failed to broadcast story update', { error, storyId: task.storyId })
+      log.error('Failed to broadcast story update', { error: error instanceof Error ? error : new Error(String(error)), storyId: task.storyId })
     }
   }
 
@@ -248,7 +248,7 @@ class QueueManager {
 
       return cached || null
     } catch (error) {
-      log.error('Failed to get cached result', { error, storyId })
+      log.error('Failed to get cached result', { error: error instanceof Error ? error : new Error(String(error)), storyId })
       return null
     }
   }
@@ -266,7 +266,7 @@ class QueueManager {
 
     // 异步处理任务
     this.processTask(task).catch(error => {
-      log.error('Task processing error', { error })
+      log.error('Task processing error', { error: error instanceof Error ? error : new Error(String(error)) })
     })
 
     // 如果还有处理能力，继续启动处理器
@@ -300,7 +300,7 @@ class QueueManager {
         maxConcurrency: this.maxConcurrency
       }
     } catch (error) {
-      log.error('Failed to get queue status', { error })
+      log.error('Failed to get queue status', { error: error instanceof Error ? error : new Error(String(error)) })
       return {
         pending: 0,
         processing: 0,
@@ -325,7 +325,7 @@ class QueueManager {
       log.info('Queue cleanup completed', { cleanedTasks: result.rowCount || 0, daysOld })
       return result.rowCount || 0
     } catch (error) {
-      log.error('Failed to cleanup old tasks', { error, daysOld })
+      log.error('Failed to cleanup old tasks', { error: error instanceof Error ? error : new Error(String(error)), daysOld })
       return 0
     }
   }

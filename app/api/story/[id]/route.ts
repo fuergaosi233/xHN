@@ -93,7 +93,7 @@ export async function GET(
     })
 
   } catch (error) {
-    log.error('Error fetching story in /api/story/[id]:', { storyId: params.id, error })
+    log.error('Error fetching story in /api/story/[id]:', { storyIdParam: params.id, error: error instanceof Error ? error : new Error(String(error)) })
     return NextResponse.json(
       { 
         success: false, 

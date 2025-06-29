@@ -106,7 +106,7 @@ async function fetchWebContent(url: string): Promise<WebContentResult> {
       cleanedContent,
     }
   } catch (error) {
-    log.error('Failed to fetch web content', { error, url })
+    log.error('Failed to fetch web content', { error: error instanceof Error ? error : new Error(String(error)), url })
     return {
       title: '',
       content: '',
@@ -133,7 +133,7 @@ export async function processWithAI(title: string, url?: string): Promise<AIProc
       webContent = await fetchWebContent(url)
       
       if (webContent.error) {
-        log.warn('Failed to fetch content from URL', { url, error: webContent.error })
+        log.warn('Failed to fetch content from URL', { url, error: new Error(webContent.error) })
       } else {
         log.info('Successfully fetched web content', { url, title: webContent.title.substring(0, 100), contentLength: webContent.cleanedContent.length })
       }
@@ -232,7 +232,7 @@ export async function processWithAI(title: string, url?: string): Promise<AIProc
       originalContent: webContent?.content
     }
   } catch (error) {
-    log.error('AI processing failed', { error, title, url, model: process.env.OPENAI_MODEL })
+    log.error('AI processing failed', { error: error instanceof Error ? error : new Error(String(error)), title, url, model: process.env.OPENAI_MODEL })
     return {
       chineseTitle: title,
       summary: '处理失败，暂无摘要'

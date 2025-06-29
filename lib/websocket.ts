@@ -30,7 +30,7 @@ class WebSocketManager {
           return (global as any).socketio
         }
       } catch (error) {
-        log.error('Failed to get global Socket.IO instance', { error })
+        log.error('Failed to get global Socket.IO instance', { error: error instanceof Error ? error : new Error(String(error)) })
       }
     }
     return null
@@ -57,7 +57,7 @@ class WebSocketManager {
         io.to(room).emit('story-updated', update)
       })
     } catch (error) {
-      log.error('Failed to broadcast story update', { error, updateStoryId: update.storyId, rooms })
+      log.error('Failed to broadcast story update', { error: error instanceof Error ? error : new Error(String(error)), updateStoryId: update.storyId, rooms })
     }
   }
 
@@ -79,7 +79,7 @@ class WebSocketManager {
         io.to(room).emit('batch-updated', batchEvent)
       })
     } catch (error) {
-      log.error('Failed to broadcast batch update', { error, updateCount: updates.length, rooms })
+      log.error('Failed to broadcast batch update', { error: error instanceof Error ? error : new Error(String(error)), updateCount: updates.length, rooms })
     }
   }
 

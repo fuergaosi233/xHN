@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       updates
     })
   } catch (error) {
-    log.error('Story updates check error in /api/stories/updates:', error)
+    log.error('Story updates check error in /api/stories/updates:', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: 'Failed to check story updates' },
       { status: 500 }

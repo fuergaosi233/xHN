@@ -85,7 +85,7 @@ export async function GET() {
       }
     })
   } catch (error) {
-    log.error('Queue status API error', { error })
+    log.error('Queue status API error', { error: error instanceof Error ? error : undefined })
     return NextResponse.json({
       success: false,
       error: 'Failed to get queue status',
@@ -104,7 +104,7 @@ export async function POST() {
       message: 'Queue processor started'
     })
   } catch (error) {
-    log.error('Queue processor start error', { error })
+    log.error('Queue processor start error', { error: error instanceof Error ? error : new Error(String(error)) })
     return NextResponse.json({
       success: false,
       error: 'Failed to start queue processor',

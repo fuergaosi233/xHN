@@ -55,7 +55,7 @@ export async function GET() {
     })
     
   } catch (error) {
-    log.error('Debug API Error in /api/status/cached:', error)
+    log.error('Debug API Error in /api/status/cached:', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       {
         success: false,

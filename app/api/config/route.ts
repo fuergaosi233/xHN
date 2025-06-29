@@ -21,7 +21,7 @@ export async function GET() {
       }
     })
   } catch (error) {
-    log.error('Config API Error in /api/config:', error)
+    log.error('Config API Error in /api/config:', { error: error instanceof Error ? error : undefined })
     return NextResponse.json(
       {
         success: false,

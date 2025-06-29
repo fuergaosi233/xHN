@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
     }
     
   } catch (error) {
-    log.error('Logs API error', { error })
+    log.error('Logs API error', { error: error instanceof Error ? error : undefined })
     return NextResponse.json({
       success: false,
       error: 'Failed to read logs',
@@ -214,7 +214,7 @@ async function getLogsStatus() {
         }
         
       } catch (fileError) {
-        log.warn('Failed to read log file stats', { file, error: fileError })
+        log.warn('Failed to read log file stats', { file, error: fileError instanceof Error ? fileError : undefined })
       }
     }
     
@@ -223,7 +223,7 @@ async function getLogsStatus() {
     
     return status
   } catch (error) {
-    log.error('Failed to get logs status', { error })
+    log.error('Failed to get logs status', { error: error instanceof Error ? error : undefined })
     return {
       directory: LOGS_DIR,
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -264,7 +264,7 @@ export async function POST(request: NextRequest) {
     }
     
   } catch (error) {
-    log.error('Logs management error', { error })
+    log.error('Logs management error', { error: error instanceof Error ? error : undefined })
     return NextResponse.json({
       success: false,
       error: 'Failed to perform log management action',

@@ -102,7 +102,7 @@ export async function POST() {
     })
 
   } catch (error) {
-    log.error('Database initialization failed in /api/db/init:', error)
+    log.error('Database initialization failed in /api/db/init:', { error: error instanceof Error ? error : undefined })
     return NextResponse.json({
       success: false,
       error: 'Database initialization failed',
@@ -142,7 +142,7 @@ export async function GET() {
     })
 
   } catch (error) {
-    log.error('Database status check failed in /api/db/init:', error)
+    log.error('Database status check failed in /api/db/init:', { error: error instanceof Error ? error : undefined })
     return NextResponse.json({
       success: false,
       status: 'error',

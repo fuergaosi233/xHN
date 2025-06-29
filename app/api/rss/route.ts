@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    log.error('RSS generation error in /api/rss:', { type, limit, error })
+    log.error('RSS generation error in /api/rss:', { error: error instanceof Error ? error : new Error(String(error)) })
     return NextResponse.json(
       { error: 'Failed to generate RSS feed' },
       { status: 500 }

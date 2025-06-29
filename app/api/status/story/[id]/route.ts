@@ -6,8 +6,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const storyIdString = params.id
   try {
-    const storyId = parseInt(params.id)
+    const storyId = parseInt(storyIdString)
     
     if (isNaN(storyId)) {
       return NextResponse.json({
@@ -28,7 +29,7 @@ export async function GET(
     })
     
   } catch (error) {
-    log.error('Debug Story API Error in /api/status/story/[id]:', { storyId: params.id, error })
+    log.error('Debug Story API Error in /api/status/story/[id]:', { storyIdParam: storyIdString, error: error instanceof Error ? error : new Error(String(error)) })
     return NextResponse.json(
       {
         success: false,

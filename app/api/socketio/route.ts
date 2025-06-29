@@ -21,7 +21,7 @@ export async function POST() {
       message: 'WebSocket endpoint ready'
     })
   } catch (error) {
-    log.error('WebSocket endpoint error in /api/socketio:', error)
+    log.error('WebSocket endpoint error in /api/socketio:', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json({
       success: false,
       error: 'WebSocket operation failed'

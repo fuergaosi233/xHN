@@ -114,7 +114,7 @@ export class HackerNewsAPI {
       this.setCachedData(cacheKey, data)
       return data
     } catch (error) {
-      log.error('Failed to fetch HackerNews item', { itemId: id, error })
+      log.error('Failed to fetch HackerNews item', { itemId: id, error: error instanceof Error ? error : new Error(String(error)) })
       return null
     }
   }

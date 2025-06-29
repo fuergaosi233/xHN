@@ -310,7 +310,7 @@ export function performanceLog(operation: string) {
         return result
       } catch (error) {
         const duration = Date.now() - start
-        logger.performance(`${operation}:${propertyName}:ERROR`, duration, { error })
+        logger.performance(`${operation}:${propertyName}:ERROR`, duration, { error: error instanceof Error ? error : new Error(String(error)) })
         throw error
       }
     }
@@ -327,7 +327,7 @@ export function errorLog(context?: string) {
         return await method.apply(this, args)
       } catch (error) {
         logger.error(`${context || 'Error'} in ${propertyName}`, { 
-          error,
+          error: error instanceof Error ? error : new Error(String(error)),
           args: args.length > 0 ? args : undefined
         })
         throw error
