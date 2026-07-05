@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { queueManager } from '@/lib/queue'
+import { requireAdmin } from '@/lib/auth'
 import { getDb } from '@/lib/db'
 import { processedStories, processingQueue } from '@/lib/db/schema'
 import { sql, desc, count, avg } from 'drizzle-orm'
@@ -94,7 +95,10 @@ export async function GET() {
   }
 }
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  const authError = requireAdmin(request)
+  if (authError) return authError
+
   try {
     // 启动队列处理器
     await queueManager.startProcessor()

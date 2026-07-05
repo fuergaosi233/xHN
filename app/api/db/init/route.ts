@@ -1,9 +1,13 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getDb, checkDbConnection } from '@/lib/db'
 import { sql } from 'drizzle-orm'
 import { log } from '@/lib/logger'
+import { requireAdmin } from '@/lib/auth'
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  const authError = requireAdmin(request)
+  if (authError) return authError
+
   try {
     // 检查数据库连接
     const connectionCheck = await checkDbConnection()
@@ -22,7 +26,7 @@ export async function POST() {
     await database.execute(sql`
       CREATE TABLE IF NOT EXISTS processing_queue (
         id SERIAL PRIMARY KEY,
-        story_id INTEGER NOT NULL,
+        story_id INTEGER NOT NULL UNIQUE,
         title TEXT NOT NULL,
         url TEXT,
         status TEXT NOT NULL DEFAULT 'pending',
@@ -46,6 +50,9 @@ export async function POST() {
         url TEXT,
         chinese_title TEXT,
         summary TEXT,
+        content TEXT,
+        tags JSONB,
+        category TEXT,
         original_data JSONB,
         processing_time INTEGER,
         model_used TEXT,
@@ -83,8 +90,8 @@ export async function POST() {
     await database.execute(sql`CREATE INDEX IF NOT EXISTS status_idx ON processing_queue(status)`)
     await database.execute(sql`CREATE INDEX IF NOT EXISTS created_at_idx ON processing_queue(created_at)`)
     await database.execute(sql`CREATE INDEX IF NOT EXISTS priority_idx ON processing_queue(priority)`)
-    await database.execute(sql`CREATE INDEX IF NOT EXISTS story_id_idx ON processed_stories(story_id)`)
     await database.execute(sql`CREATE INDEX IF NOT EXISTS expires_at_idx ON processed_stories(expires_at)`)
+    await database.execute(sql`CREATE INDEX IF NOT EXISTS category_idx ON processed_stories(category)`)
     await database.execute(sql`CREATE INDEX IF NOT EXISTS date_idx ON processing_stats(date)`)
 
     // 插入默认配置
@@ -111,7 +118,10 @@ export async function POST() {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const authError = requireAdmin(request)
+  if (authError) return authError
+
   try {
     const connectionCheck = await checkDbConnection()
     

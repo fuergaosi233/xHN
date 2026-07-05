@@ -179,13 +179,14 @@ export async function processWithAI(title: string, url?: string): Promise<AIProc
 3. 如果是技术类文章，请保留重要的技术术语
 `
     
-    // 替换模板变量
+    // 替换模板变量（使用函数形式，避免正文中的 $& 等模式被 String.replace 特殊解释）
+    const maxContentChars = parseInt(process.env.AI_MAX_CONTENT_CHARS || '8000')
     const urlInfo = url ? `【链接】${url}` : ''
-    const contentInfo = webContent?.cleanedContent || ''
+    const contentInfo = (webContent?.cleanedContent || '').substring(0, maxContentChars)
     const prompt = userPromptTemplate
-      .replace('{title}', title)
-      .replace('{content}', contentInfo)
-      .replace('{url_info}', urlInfo)
+      .replace(/\{title\}/g, () => title)
+      .replace(/\{content\}/g, () => contentInfo)
+      .replace(/\{url_info\}/g, () => urlInfo)
 
     const completion = await getOpenAIClient().chat.completions.create({
       model: modelConfig.model,
@@ -218,8 +219,16 @@ export async function processWithAI(title: string, url?: string): Promise<AIProc
     const categoryMatch = response.match(/分类[：:]\s*([\s\S]+?)(?=\n标签|$)/)
     const tagsMatch = response.match(/标签[：:]\s*([\s\S]+?)$/)
     
-    const chineseTitle = chineseTitleMatch?.[1]?.trim() || title
-    const summary = summaryMatch?.[1]?.trim() || '暂无摘要'
+    const parsedTitle = chineseTitleMatch?.[1]?.trim()
+    const parsedSummary = summaryMatch?.[1]?.trim()
+
+    // 标题和摘要都解析不出来说明响应格式异常，抛出让队列重试，避免缓存无效结果
+    if (!parsedTitle && !parsedSummary) {
+      throw new Error(`AI 响应格式无法解析: ${response.substring(0, 200)}`)
+    }
+
+    const chineseTitle = parsedTitle || title
+    const summary = parsedSummary || '暂无摘要'
     const category = categoryMatch?.[1]?.trim() || undefined
     const tags = tagsMatch?.[1]?.trim()?.split(',').map(tag => tag.trim()).filter(tag => tag) || undefined
     
@@ -233,9 +242,7 @@ export async function processWithAI(title: string, url?: string): Promise<AIProc
     }
   } catch (error) {
     log.error('AI processing failed', { error: error instanceof Error ? error : new Error(String(error)), title, url, model: process.env.OPENAI_MODEL })
-    return {
-      chineseTitle: title,
-      summary: '处理失败，暂无摘要'
-    }
+    // 向上抛出，让队列走重试/失败流程，避免把失败结果当成功缓存
+    throw error instanceof Error ? error : new Error(String(error))
   }
 }

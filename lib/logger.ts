@@ -65,8 +65,10 @@ if (process.env.NODE_ENV !== 'production') {
   )
 }
 
-// 文件传输（生产环境）
-if (process.env.NODE_ENV === 'production') {
+// 文件传输：默认关闭。容器/PaaS 环境（Railway、k8s、Vercel）应由平台收集 stdout，
+// 文件系统只读或随容器销毁；仅在显式设置 LOG_TO_FILES=true 且挂载了可写目录时启用
+const logToFiles = process.env.LOG_TO_FILES === 'true'
+if (logToFiles) {
   const logsDir = process.env.LOGS_DIR || './logs'
   
   // 错误日志
@@ -106,21 +108,16 @@ if (process.env.NODE_ENV === 'production') {
 const winstonLogger = winston.createLogger({
   level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
   transports,
-  // 异常处理
+  // 未捕获异常与 Promise 拒绝：默认输出到控制台，避免在只读文件系统上崩溃
   exceptionHandlers: [
-    new winston.transports.File({ 
-      filename: process.env.NODE_ENV === 'production' 
-        ? path.join(process.env.LOGS_DIR || './logs', 'exceptions.log')
-        : './exceptions.log'
-    })
+    logToFiles
+      ? new winston.transports.File({ filename: path.join(process.env.LOGS_DIR || './logs', 'exceptions.log') })
+      : new winston.transports.Console()
   ],
-  // 拒绝处理的 Promise
   rejectionHandlers: [
-    new winston.transports.File({ 
-      filename: process.env.NODE_ENV === 'production'
-        ? path.join(process.env.LOGS_DIR || './logs', 'rejections.log') 
-        : './rejections.log'
-    })
+    logToFiles
+      ? new winston.transports.File({ filename: path.join(process.env.LOGS_DIR || './logs', 'rejections.log') })
+      : new winston.transports.Console()
   ]
 })
 

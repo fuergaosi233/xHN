@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    serverComponentsExternalPackages: ['axios']
+    serverComponentsExternalPackages: ['axios', 'jsdom', 'winston', 'pg'],
+    instrumentationHook: true
   },
   async rewrites() {
     return [

@@ -3,7 +3,7 @@ import { pgTable, serial, text, integer, timestamp, boolean, jsonb, index } from
 // 任务队列表
 export const processingQueue = pgTable('processing_queue', {
   id: serial('id').primaryKey(),
-  storyId: integer('story_id').notNull(),
+  storyId: integer('story_id').notNull().unique(),
   title: text('title').notNull(),
   url: text('url'),
   status: text('status').notNull().default('pending'), // pending, processing, completed, failed
@@ -40,7 +40,7 @@ export const processedStories = pgTable('processed_stories', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
   expiresAt: timestamp('expires_at').notNull(), // 缓存过期时间
 }, (table) => ({
-  storyIdIdx: index('story_id_idx').on(table.storyId),
+  // storyId 的 unique 约束已隐含索引，无需重复建 story_id_idx
   expiresAtIdx: index('expires_at_idx').on(table.expiresAt),
   categoryIdx: index('category_idx').on(table.category),
 }))

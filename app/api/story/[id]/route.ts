@@ -70,19 +70,22 @@ export async function GET(
     }
 
     const processedStory = story[0]
-    
+
+    // originalData 是 jsonb 列，drizzle 返回的已经是对象，无需（也不能）JSON.parse
+    const originalData = (processedStory.originalData || {}) as Record<string, any>
+
     // 转换为前端期望的格式
     const processedItem = {
       id: processedStory.storyId,
       title: processedStory.title,
       url: processedStory.url,
-      by: JSON.parse(processedStory.originalData as string || '{}').by || 'unknown',
-      time: JSON.parse(processedStory.originalData as string || '{}').time || 0,
-      score: JSON.parse(processedStory.originalData as string || '{}').score || 0,
-      descendants: JSON.parse(processedStory.originalData as string || '{}').descendants || 0,
+      by: originalData.by || 'unknown',
+      time: originalData.time || 0,
+      score: originalData.score || 0,
+      descendants: originalData.descendants || 0,
       chineseTitle: processedStory.chineseTitle,
       summary: processedStory.summary,
-      tags: processedStory.tags as string[] || [],
+      tags: (processedStory.tags as any)?.tags || [],
       category: processedStory.category
     }
 

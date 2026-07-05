@@ -12,7 +12,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { storyIds } = body
 
-    if (!Array.isArray(storyIds) || storyIds.length === 0) {
+    if (!Array.isArray(storyIds) || storyIds.length === 0 || storyIds.length > 200) {
+      return NextResponse.json({ error: 'Invalid story IDs' }, { status: 400 })
+    }
+
+    if (!storyIds.every((id: unknown) => Number.isInteger(id))) {
       return NextResponse.json({ error: 'Invalid story IDs' }, { status: 400 })
     }
 

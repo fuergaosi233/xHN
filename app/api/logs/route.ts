@@ -2,11 +2,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import { readFile, readdir, stat } from 'fs/promises'
 import { join } from 'path'
 import { log } from '@/lib/logger'
+import { requireAdmin } from '@/lib/auth'
 
 const LOGS_DIR = process.env.LOGS_DIR || './logs'
 const MAX_LINES = 100
 
+// 转义用户输入，避免构造正则时的注入 / ReDoS
+function escapeRegExp(input: string): string {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 export async function GET(request: NextRequest) {
+  const authError = requireAdmin(request)
+  if (authError) return authError
+
   try {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type') || 'combined'
@@ -44,14 +53,14 @@ export async function GET(request: NextRequest) {
       
       // 按级别过滤
       if (level) {
-        const levelPattern = new RegExp(`\\b${level.toUpperCase()}\\b`, 'i')
+        const levelPattern = new RegExp(`\\b${escapeRegExp(level.toUpperCase())}\\b`, 'i')
         logLines = logLines.filter(line => levelPattern.test(line))
       }
-      
-      // 按关键词搜索
+
+      // 按关键词搜索（纯文本匹配，不解释为正则）
       if (search) {
-        const searchPattern = new RegExp(search, 'i')
-        logLines = logLines.filter(line => searchPattern.test(line))
+        const searchLower = search.toLowerCase()
+        logLines = logLines.filter(line => line.toLowerCase().includes(searchLower))
       }
       
       // 获取最新的指定行数
@@ -244,6 +253,9 @@ function formatFileSize(bytes: number): string {
 
 // POST 请求用于日志管理操作
 export async function POST(request: NextRequest) {
+  const authError = requireAdmin(request)
+  if (authError) return authError
+
   try {
     const body = await request.json()
     const { action, type } = body

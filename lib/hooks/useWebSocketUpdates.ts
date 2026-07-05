@@ -186,13 +186,15 @@ export function useWebSocketUpdates(stories: ProcessedItem[], roomType: 'top-sto
     setUpdatedStories(stories)
   }, [stories])
 
-  // 切换房间类型
+  // 切换房间类型：离开上一个房间，加入新房间
+  const prevRoomTypeRef = useRef(roomType)
   useEffect(() => {
-    if (socketRef.current?.connected) {
-      // 离开当前房间，加入新房间
-      socketRef.current.emit('leave-room', roomType)
+    const prevRoomType = prevRoomTypeRef.current
+    if (socketRef.current?.connected && prevRoomType !== roomType) {
+      socketRef.current.emit('leave-room', prevRoomType)
       socketRef.current.emit('join-room', roomType)
     }
+    prevRoomTypeRef.current = roomType
   }, [roomType])
 
   // 手动重连

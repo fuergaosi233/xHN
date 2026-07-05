@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { HackerNewsAPI, ProcessedItem } from '@/lib/hackernews'
 import { queueManager } from '@/lib/queue'
-import { checkDbConnection, getDb } from '@/lib/db'
+import { getDb } from '@/lib/db'
 import { processedStories } from '@/lib/db/schema'
 import { inArray } from 'drizzle-orm'
 import { log } from '@/lib/logger'
@@ -14,22 +14,10 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const type = searchParams.get('type') as 'top' | 'best' | 'new' || 'top'
-  const forceRefresh = searchParams.get('refresh') === 'true'
   const page = parseInt(searchParams.get('page') || '0')
   const limit = parseInt(searchParams.get('limit') || '20')
   
   try {
-    
-    // 检查数据库连接
-    const dbCheck = await checkDbConnection()
-    if (!dbCheck.success) {
-      return NextResponse.json({
-        success: false,
-        error: 'Database connection failed',
-        details: dbCheck.error
-      }, { status: 500 })
-    }
-
     // 获取 Hacker News 数据
     let stories: any[]
     
@@ -51,9 +39,11 @@ export async function GET(request: NextRequest) {
     const storyIds = validStories.map(story => story.id)
     const database = await getDb()
     
-    // 批量查询数据库中已有的翻译数据
+    // 批量查询数据库中已有的翻译数据。
+    // 注意：refresh=true 只表示绕过 HN 榜单缓存重新拉取列表，翻译结果不可变、始终复用；
+    // 之前跳过读库会导致所有条目卡在"正在处理中"且队列因缓存命中拒绝重新入队
     let existingTranslations: any[] = []
-    if (!forceRefresh && storyIds.length > 0) {
+    if (storyIds.length > 0) {
       existingTranslations = await database.select({
         storyId: processedStories.storyId,
         chineseTitle: processedStories.chineseTitle,
@@ -101,10 +91,11 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // 将需要翻译的故事添加到处理队列
+    // 将需要翻译的故事添加到处理队列；常驻 worker（instrumentation.ts）会轮询处理，
+    // 这里再同步踢一脚以降低首次翻译延迟
     if (storiesToProcess.length > 0) {
       await queueManager.addBatchTasks(storiesToProcess, type === 'top' ? 1 : 0)
-      queueManager.startProcessor()
+      queueManager.startProcessor().catch(() => {})
     }
     
     // 按原始顺序排序 (finalStories已经按照validStories的顺序构建，所以不需要额外排序)
