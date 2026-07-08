@@ -37,7 +37,8 @@ export async function GET(request: NextRequest) {
       .orderBy(orderBy)
       .limit(limit)
 
-    const baseUrl = request.nextUrl.origin
+    // 反代/隧道后面 nextUrl.origin 是内部地址，优先用显式配置的站点 URL
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin
     const now = new Date().toISOString()
     
     const rssXml = `<?xml version="1.0" encoding="UTF-8"?>
