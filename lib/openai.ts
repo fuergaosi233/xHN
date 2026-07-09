@@ -148,66 +148,101 @@ function extractContent(html: string, url: string): { title: string; text: strin
   }
 }
 
-// 抓取器优先级：FlareSolverr（反检测，过 CF 墙）→ 无头 Chrome（CDP）→ axios 直抓。
-// 前一个未配置或抛错就降级到下一个，任一成功即用其 HTML。
-async function fetchHtml(url: string): Promise<{ html: string; via: string }> {
+// 通过 ladder（自建付费墙代理，https://github.com/everywall/ladder）抓取。
+// 专治付费墙 / cookie 墙 / 软性阅读限制；LADDER_URL 形如 http://xhn-ladder:8080
+async function fetchHtmlViaLadder(url: string): Promise<string> {
+  const base = process.env.LADDER_URL
+  if (!base) {
+    throw new Error('LADDER_URL not configured')
+  }
+  const response = await axios.get(`${base.replace(/\/$/, '')}/raw/${url}`, {
+    timeout: parseInt(process.env.CONTENT_TIMEOUT || '40000'),
+    maxContentLength: 10 * 1024 * 1024,
+    responseType: 'text'
+  })
+  return String(response.data)
+}
+
+// 抽出的正文疑似反爬 / 挑战 / 付费壳页（内容短且含验证话术）→ 不可用
+function looksLikeWall(text: string): boolean {
+  const t = text.trim()
+  if (t.length >= 800) return false // 有实质正文就不算墙
+  return /enable\s+javascript|verify\s+you\s+are\s+human|checking\s+your\s+browser|just\s+a\s+moment|cf-browser-verification|attention\s+required|subscribe\s+to\s+(read|continue)|create\s+(a\s+)?free\s+account|请开启\s*javascript|正在验证|订阅后.*阅读|登录后.*查看/i.test(t)
+}
+
+// 抓取器优先级：FlareSolverr（反检测，过 CF 墙）→ ladder（付费墙）→ 无头 Chrome（CDP）→ axios。
+// 逐个尝试并抽正文，取第一个"抽出实质正文"的结果；都不行则返回目前最长的一个。
+const MIN_CONTENT_LEN = 300
+async function fetchWebContent(url: string): Promise<WebContentResult> {
   const strategies: Array<{ name: string; fn: () => Promise<string> }> = [
     { name: 'flaresolverr', fn: () => fetchHtmlViaFlareSolverr(url) },
+    { name: 'ladder', fn: () => fetchHtmlViaLadder(url) },
     { name: 'chrome', fn: () => fetchHtmlViaBrowser(url) },
     { name: 'axios', fn: () => fetchHtmlViaAxios(url) },
   ]
 
-  let lastError: Error | null = null
+  let best: { title: string; text: string; via: string } | null = null
+
   for (const s of strategies) {
+    let html: string
     try {
-      const html = await s.fn()
-      return { html, via: s.name }
+      html = await s.fn()
     } catch (err) {
       const e = err instanceof Error ? err : new Error(String(err))
-      // "未配置"不算失败，静默跳过；真正的抓取错误才记 warn
       if (!/not configured/.test(e.message)) {
         log.warn(`Fetch strategy ${s.name} failed`, { url, error: e })
-        lastError = e
       }
+      continue
+    }
+
+    const { title, text } = extractContent(html, url)
+    const cleanLen = text.trim().length
+
+    // 抽出实质正文且不像墙 → 直接采用
+    if (cleanLen >= MIN_CONTENT_LEN && !looksLikeWall(text)) {
+      log.debug('Fetched web content', { url, via: s.name, len: cleanLen })
+      const cleanedContent = text.replace(/\s+/g, ' ').replace(/\n\s*\n/g, '\n').trim().substring(0, 50000)
+      return { title, content: text.substring(0, 100000), cleanedContent }
+    }
+
+    // 否则记下最长的一版，继续尝试下一个策略
+    if (!best || cleanLen > best.text.trim().length) {
+      best = { title, text, via: s.name }
     }
   }
-  throw lastError || new Error('No fetch strategy available')
+
+  // 所有策略都没抽到实质正文：正文置空，交由上层标注"无法抓取"
+  log.warn('All fetch strategies yielded no substantial content', { url, bestVia: best?.via, bestLen: best ? best.text.trim().length : 0 })
+  return {
+    title: best?.title || '',
+    content: '',
+    cleanedContent: '',
+    error: 'no substantial content extracted'
+  }
 }
 
-async function fetchWebContent(url: string): Promise<WebContentResult> {
+// 只翻译标题（抓不到正文时用）：一次极小的调用，不产出摘要
+async function translateTitleOnly(title: string, modelConfig: ReturnType<typeof getCurrentModelConfig>): Promise<string> {
   try {
-    const { html, via } = await fetchHtml(url)
-
-    let { title, text } = extractContent(html, url)
-
-    // 抽出的正文过短且疑似反爬壳页时，视为失败（宁可只用标题翻译，也不要把"请启用JS"喂给模型）
-    const looksBlocked = /enable\s+javascript|verify\s+you\s+are\s+human|checking\s+your\s+browser|just\s+a\s+moment|cf-browser-verification|请开启\s*javascript|正在验证/i.test(text)
-    if (looksBlocked && text.trim().length < 500) {
-      log.warn('Fetched content looks like a bot-wall, discarding body', { url, via, len: text.trim().length })
-      text = ''
-    } else {
-      log.debug('Fetched web content', { url, via, len: text.trim().length })
+    const requestBody: any = {
+      model: modelConfig.model,
+      messages: [
+        { role: 'system', content: '你是专业的技术新闻翻译助手，只把英文标题翻译成准确、地道的中文，直接输出译文，不要加任何解释或前缀。' },
+        { role: 'user', content: title }
+      ],
+      max_tokens: 100,
+      temperature: modelConfig.temperature
     }
-
-    const cleanedContent = text
-      .replace(/\s+/g, ' ')
-      .replace(/\n\s*\n/g, '\n')
-      .trim()
-      .substring(0, 50000)
-
-    return {
-      title,
-      content: text.substring(0, 100000), // Store more content in DB
-      cleanedContent,
+    if (process.env.AI_THINKING) {
+      requestBody.thinking = { type: process.env.AI_THINKING }
     }
+    const completion = await getOpenAIClient().chat.completions.create(requestBody)
+    const message = completion.choices[0]?.message
+    const out = (message?.content || (message as any)?.reasoning || '').trim()
+    return out || title
   } catch (error) {
-    log.error('Failed to fetch web content', { error: error instanceof Error ? error : new Error(String(error)), url })
-    return {
-      title: '',
-      content: '',
-      cleanedContent: '',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }
+    log.warn('Title-only translation failed, using original title', { title, error: error instanceof Error ? error : new Error(String(error)) })
+    return title
   }
 }
 
@@ -226,11 +261,25 @@ export async function processWithAI(title: string, url?: string): Promise<AIProc
     if (url) {
       log.info('Fetching web content', { url })
       webContent = await fetchWebContent(url)
-      
+
       if (webContent.error) {
         log.warn('Failed to fetch content from URL', { url, error: new Error(webContent.error) })
       } else {
         log.info('Successfully fetched web content', { url, title: webContent.title.substring(0, 100), contentLength: webContent.cleanedContent.length })
+      }
+    }
+
+    // 有链接却抓不到正文（反爬墙 / 付费墙 / 需登录）：只翻译标题，摘要如实标注无法抓取，
+    // 不用标题编造摘要（会产生"文章标题虽提及…但内容未提供"这类幻觉）
+    const fetchFailed = Boolean(url) && !webContent?.cleanedContent
+    if (fetchFailed) {
+      const failMessage = process.env.AI_FETCH_FAILED_MESSAGE || '⚠️ 无法抓取正文内容（可能是反爬限制、付费墙或需要登录），请点击原文查看。'
+      const chineseTitle = await translateTitleOnly(title, modelConfig)
+      return {
+        chineseTitle,
+        summary: failMessage,
+        content: '',
+        originalContent: ''
       }
     }
     
