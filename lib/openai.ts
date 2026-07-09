@@ -229,7 +229,16 @@ async function fetchWebContent(url: string): Promise<WebContentResult> {
     }
   }
 
-  // 所有策略都没抽到实质正文：正文置空，交由上层标注"无法抓取"
+  // 没有策略抽到 >=300 字的正文，但如果拿到了较短却真实的内容（如推文），
+  // 且不像反爬/挑战壳页，仍然采用——只有空或像墙才标注"无法抓取"
+  const MIN_USABLE_LEN = 40
+  if (best && best.text.trim().length >= MIN_USABLE_LEN && !looksLikeWall(best.text)) {
+    log.debug('Using short but valid content', { url, via: best.via, len: best.text.trim().length })
+    const cleanedContent = best.text.replace(/\s+/g, ' ').replace(/\n\s*\n/g, '\n').trim().substring(0, 50000)
+    return { title: best.title, content: best.text.substring(0, 100000), cleanedContent }
+  }
+
+  // 确实抓不到实质正文：正文置空，交由上层标注"无法抓取"
   log.warn('All fetch strategies yielded no substantial content', { url, bestVia: best?.via, bestLen: best ? best.text.trim().length : 0 })
   return {
     title: best?.title || '',
