@@ -1,7 +1,9 @@
 import OpenAI from 'openai'
 import { getCurrentModelConfig, validateModelConfig } from './config'
 import axios from 'axios'
-import { JSDOM } from 'jsdom'
+import { JSDOM, VirtualConsole } from 'jsdom'
+import { Readability } from '@mozilla/readability'
+import { lookup } from 'dns/promises'
 import { log } from './logger'
 
 let openai: OpenAI | null = null
@@ -36,73 +38,118 @@ interface WebContentResult {
   error?: string
 }
 
+// 通过无头 Chrome (CDP) 抓取渲染后的 HTML —— 参考 karakeep 的抓取架构，
+// 复用集群内同一个 chrome 实例（CHROME_CDP_URL，如 http://chrome.karakeep:9222）
+async function fetchHtmlViaBrowser(url: string): Promise<string> {
+  const cdpUrl = process.env.CHROME_CDP_URL
+  if (!cdpUrl) {
+    throw new Error('CHROME_CDP_URL not configured')
+  }
+
+  // Chrome 的调试端口会拒绝非 IP/localhost 的 Host 头，先把服务名解析成 IP
+  const parsed = new URL(cdpUrl)
+  const { address } = await lookup(parsed.hostname)
+  const browserURL = `${parsed.protocol}//${address}:${parsed.port || 9222}`
+
+  const puppeteer = await import('puppeteer-core')
+  const browser = await puppeteer.connect({ browserURL })
+  const page = await browser.newPage()
+  try {
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36')
+    await page.goto(url, {
+      waitUntil: 'domcontentloaded',
+      timeout: parseInt(process.env.CONTENT_TIMEOUT || '30000')
+    })
+    // 给 JS 渲染的页面留一点水合时间
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    return await page.content()
+  } finally {
+    await page.close().catch(() => {})
+    // 只断开连接，不关闭共享的浏览器实例
+    browser.disconnect()
+  }
+}
+
+async function fetchHtmlViaAxios(url: string): Promise<string> {
+  const response = await axios.get(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
+    },
+    timeout: parseInt(process.env.CONTENT_TIMEOUT || '30000'),
+    maxContentLength: 10 * 1024 * 1024, // 10MB limit
+    responseType: 'text'
+  })
+  return String(response.data)
+}
+
+// 从 HTML 提取正文：优先 Readability（karakeep 同款思路），失败退回选择器启发式
+function extractContent(html: string, url: string): { title: string; text: string } {
+  const virtualConsole = new VirtualConsole() // 屏蔽第三方页面 CSS 解析报错噪音
+  const dom = new JSDOM(html, { url, virtualConsole })
+  const document = dom.window.document
+
+  const reader = new Readability(document.cloneNode(true) as Document)
+  const article = reader.parse()
+  if (article?.textContent && article.textContent.trim().length > 200) {
+    return {
+      title: article.title || '',
+      text: article.textContent
+    }
+  }
+
+  // Readability 失败（内容太短/结构特殊）时的启发式兜底
+  const unwantedSelectors = [
+    'script', 'style', 'nav', 'header', 'footer',
+    '.nav', '.navigation', '.menu', '.sidebar',
+    '.advertisement', '.ads', '.social-share',
+    '.comments', '.comment-section', '.related-posts'
+  ]
+  unwantedSelectors.forEach(selector => {
+    document.querySelectorAll(selector).forEach(el => el.remove())
+  })
+
+  const contentSelectors = [
+    'article', '[role="main"]', '.article-content', '.post-content',
+    '.entry-content', '.content', 'main', '.main-content'
+  ]
+  let contentElement: Element | null = null
+  for (const selector of contentSelectors) {
+    contentElement = document.querySelector(selector)
+    if (contentElement) break
+  }
+
+  return {
+    title: document.querySelector('h1')?.textContent?.trim() ||
+           document.querySelector('title')?.textContent?.trim() || '',
+    text: (contentElement || document.body)?.textContent || ''
+  }
+}
+
 async function fetchWebContent(url: string): Promise<WebContentResult> {
   try {
-    const response = await axios.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      },
-      timeout: 30000,
-      maxContentLength: 10 * 1024 * 1024, // 10MB limit
-    })
-
-    const dom = new JSDOM(response.data)
-    const document = dom.window.document
-
-    // Remove unwanted elements
-    const unwantedSelectors = [
-      'script', 'style', 'nav', 'header', 'footer', 
-      '.nav', '.navigation', '.menu', '.sidebar',
-      '.advertisement', '.ads', '.social-share',
-      '.comments', '.comment-section', '.related-posts'
-    ]
-    
-    unwantedSelectors.forEach(selector => {
-      const elements = document.querySelectorAll(selector)
-      elements.forEach(el => el.remove())
-    })
-
-    // Try to find the main content using common article selectors
-    const contentSelectors = [
-      'article',
-      '[role="main"]',
-      '.article-content',
-      '.post-content',
-      '.entry-content',
-      '.content',
-      'main',
-      '.main-content'
-    ]
-
-    let contentElement = null
-    for (const selector of contentSelectors) {
-      contentElement = document.querySelector(selector)
-      if (contentElement) break
+    // 浏览器渲染优先（能处理 JS 渲染的页面），不可用或失败时退回直接 HTTP 抓取
+    let html: string
+    try {
+      html = await fetchHtmlViaBrowser(url)
+      log.debug('Fetched via headless chrome', { url })
+    } catch (browserError) {
+      if (process.env.CHROME_CDP_URL) {
+        log.warn('Headless chrome fetch failed, falling back to axios', { url, error: browserError instanceof Error ? browserError : new Error(String(browserError)) })
+      }
+      html = await fetchHtmlViaAxios(url)
     }
 
-    // If no specific content area found, use body
-    if (!contentElement) {
-      contentElement = document.body
-    }
+    const { title, text } = extractContent(html, url)
 
-    // Extract title
-    let pageTitle = document.querySelector('h1')?.textContent?.trim() ||
-                   document.querySelector('title')?.textContent?.trim() ||
-                   ''
-
-    // Extract and clean content
-    let rawContent = contentElement?.textContent || ''
-    
-    // Clean up the content
-    const cleanedContent = rawContent
-      .replace(/\s+/g, ' ') // Replace multiple whitespace with single space
-      .replace(/\n\s*\n/g, '\n') // Remove empty lines
+    const cleanedContent = text
+      .replace(/\s+/g, ' ')
+      .replace(/\n\s*\n/g, '\n')
       .trim()
-      .substring(0, 50000) // Limit content length for LLM processing
+      .substring(0, 50000)
 
     return {
-      title: pageTitle,
-      content: rawContent.substring(0, 100000), // Store more content in DB
+      title,
+      content: text.substring(0, 100000), // Store more content in DB
       cleanedContent,
     }
   } catch (error) {
@@ -188,7 +235,7 @@ export async function processWithAI(title: string, url?: string): Promise<AIProc
       .replace(/\{content\}/g, () => contentInfo)
       .replace(/\{url_info\}/g, () => urlInfo)
 
-    const completion = await getOpenAIClient().chat.completions.create({
+    const requestBody: any = {
       model: modelConfig.model,
       messages: [
         {
@@ -202,7 +249,15 @@ export async function processWithAI(title: string, url?: string): Promise<AIProc
       ],
       max_tokens: webContent?.cleanedContent ? 1000 : 500,
       temperature: modelConfig.temperature
-    })
+    }
+
+    // 火山方舟的推理模型（如 doubao-seed-1.6-flash 250828+）默认开启 thinking，
+    // 隐藏推理会烧掉数千 output tokens；翻译任务不需要，显式关闭
+    if (process.env.AI_THINKING) {
+      requestBody.thinking = { type: process.env.AI_THINKING }
+    }
+
+    const completion = await getOpenAIClient().chat.completions.create(requestBody)
 
     // 处理deepseek-r1等推理模型的特殊响应格式
     const message = completion.choices[0]?.message

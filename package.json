@@ -26,6 +26,7 @@
     "logs:search": "./scripts/log-manager.sh search"
   },
   "dependencies": {
+    "@mozilla/readability": "^0.6.0",
     "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-separator": "^1.0.3",
     "@radix-ui/react-slot": "^1.0.2",
@@ -45,6 +46,7 @@
     "openai": "^4.67.1",
     "pg": "^8.16.1",
     "postcss": "^8.4.35",
+    "puppeteer-core": "^25.3.0",
     "react": "^18",
     "react-dom": "^18",
     "socket.io": "^4.8.1",
