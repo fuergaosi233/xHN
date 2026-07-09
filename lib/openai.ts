@@ -38,6 +38,29 @@ interface WebContentResult {
   error?: string
 }
 
+// 通过 FlareSolverr 抓取：真浏览器 + 反检测，能过 Cloudflare/DDoS-Guard 等 JS 挑战墙。
+// 裸 headless chrome 会被这些站点识别并返回"请启用 JavaScript"的壳页，抽不到正文。
+// FLARESOLVERR_URL 形如 http://xhn-flaresolverr:8191
+async function fetchHtmlViaFlareSolverr(url: string): Promise<string> {
+  const base = process.env.FLARESOLVERR_URL
+  if (!base) {
+    throw new Error('FLARESOLVERR_URL not configured')
+  }
+
+  const maxTimeout = parseInt(process.env.CONTENT_TIMEOUT || '40000')
+  const response = await axios.post(
+    `${base.replace(/\/$/, '')}/v1`,
+    { cmd: 'request.get', url, maxTimeout },
+    { timeout: maxTimeout + 15000, headers: { 'Content-Type': 'application/json' } }
+  )
+
+  const data = response.data
+  if (data?.status !== 'ok' || !data?.solution?.response) {
+    throw new Error(`FlareSolverr failed: ${data?.message || data?.status || 'no response'}`)
+  }
+  return String(data.solution.response)
+}
+
 // 通过无头 Chrome (CDP) 抓取渲染后的 HTML —— 参考 karakeep 的抓取架构，
 // 复用集群内同一个 chrome 实例（CHROME_CDP_URL，如 http://chrome.karakeep:9222）
 async function fetchHtmlViaBrowser(url: string): Promise<string> {
@@ -125,21 +148,46 @@ function extractContent(html: string, url: string): { title: string; text: strin
   }
 }
 
+// 抓取器优先级：FlareSolverr（反检测，过 CF 墙）→ 无头 Chrome（CDP）→ axios 直抓。
+// 前一个未配置或抛错就降级到下一个，任一成功即用其 HTML。
+async function fetchHtml(url: string): Promise<{ html: string; via: string }> {
+  const strategies: Array<{ name: string; fn: () => Promise<string> }> = [
+    { name: 'flaresolverr', fn: () => fetchHtmlViaFlareSolverr(url) },
+    { name: 'chrome', fn: () => fetchHtmlViaBrowser(url) },
+    { name: 'axios', fn: () => fetchHtmlViaAxios(url) },
+  ]
+
+  let lastError: Error | null = null
+  for (const s of strategies) {
+    try {
+      const html = await s.fn()
+      return { html, via: s.name }
+    } catch (err) {
+      const e = err instanceof Error ? err : new Error(String(err))
+      // "未配置"不算失败，静默跳过；真正的抓取错误才记 warn
+      if (!/not configured/.test(e.message)) {
+        log.warn(`Fetch strategy ${s.name} failed`, { url, error: e })
+        lastError = e
+      }
+    }
+  }
+  throw lastError || new Error('No fetch strategy available')
+}
+
 async function fetchWebContent(url: string): Promise<WebContentResult> {
   try {
-    // 浏览器渲染优先（能处理 JS 渲染的页面），不可用或失败时退回直接 HTTP 抓取
-    let html: string
-    try {
-      html = await fetchHtmlViaBrowser(url)
-      log.debug('Fetched via headless chrome', { url })
-    } catch (browserError) {
-      if (process.env.CHROME_CDP_URL) {
-        log.warn('Headless chrome fetch failed, falling back to axios', { url, error: browserError instanceof Error ? browserError : new Error(String(browserError)) })
-      }
-      html = await fetchHtmlViaAxios(url)
-    }
+    const { html, via } = await fetchHtml(url)
 
-    const { title, text } = extractContent(html, url)
+    let { title, text } = extractContent(html, url)
+
+    // 抽出的正文过短且疑似反爬壳页时，视为失败（宁可只用标题翻译，也不要把"请启用JS"喂给模型）
+    const looksBlocked = /enable\s+javascript|verify\s+you\s+are\s+human|checking\s+your\s+browser|just\s+a\s+moment|cf-browser-verification|请开启\s*javascript|正在验证/i.test(text)
+    if (looksBlocked && text.trim().length < 500) {
+      log.warn('Fetched content looks like a bot-wall, discarding body', { url, via, len: text.trim().length })
+      text = ''
+    } else {
+      log.debug('Fetched web content', { url, via, len: text.trim().length })
+    }
 
     const cleanedContent = text
       .replace(/\s+/g, ' ')
