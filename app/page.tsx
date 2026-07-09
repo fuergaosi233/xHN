@@ -151,6 +151,84 @@ export default function Home() {
     fetchStories(activeTab, 0, false, true)
   }
 
+  // 三个标签页共用同一份加载/错误/列表/无限滚动渲染逻辑，只有加载文案和动画风格不同
+  const renderStoryFeed = (loadingMessage: string, loadingVariant: 'ai' | 'sparkle' | 'default') => (
+    <>
+      {/* Loading State */}
+      {loading && (
+        <div className="space-y-4">
+          <LoadingSpinner
+            message={loadingMessage}
+            variant={loadingVariant}
+            size="lg"
+          />
+          <StoryCardSkeleton count={3} />
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && !loading && (
+        <Card className="text-center p-8">
+          <CardContent>
+            <h3 className="font-medium mb-2 text-destructive">获取数据失败</h3>
+            <p className="text-sm text-muted-foreground mb-4">{error}</p>
+            <Button
+              onClick={() => fetchStories(activeTab)}
+              variant="destructive"
+            >
+              重试
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Stories List */}
+      {!loading && !error && updatedStories.length > 0 && (
+        <>
+          <div className="divide-y divide-border/30">
+            {updatedStories.map((story, index) => (
+              <StoryCard key={story.id} story={story} index={index} />
+            ))}
+          </div>
+
+          {/* Infinite Scroll Trigger */}
+          {hasMore && (
+            <div ref={observe} className="flex justify-center py-8">
+              {loadingMore ? (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>加载更多文章...</span>
+                </div>
+              ) : (
+                <div className="text-muted-foreground text-sm">
+                  滚动查看更多
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* End Message */}
+          {!hasMore && !loadingMore && (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground text-sm">
+                已加载全部文章 ({updatedStories.length} 篇)
+              </p>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Empty State */}
+      {!loading && !error && updatedStories.length === 0 && (
+        <Card className="text-center p-8">
+          <CardContent>
+            <p className="text-muted-foreground">暂无数据</p>
+          </CardContent>
+        </Card>
+      )}
+    </>
+  )
+
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
       
@@ -175,228 +253,15 @@ export default function Home() {
 
 
         <TabsContent value="top" className="mt-6">
-          {/* Loading State */}
-          {loading && (
-            <div className="space-y-4">
-              <LoadingSpinner 
-                message="正在获取最热新闻..." 
-                variant="ai" 
-                size="lg"
-              />
-              <StoryCardSkeleton count={3} />
-            </div>
-          )}
-
-          {/* Error State */}
-          {error && !loading && (
-            <Card className="text-center p-8">
-              <CardContent>
-                <h3 className="font-medium mb-2 text-destructive">获取数据失败</h3>
-                <p className="text-sm text-muted-foreground mb-4">{error}</p>
-                <Button
-                  onClick={() => fetchStories(activeTab)}
-                  variant="destructive"
-                >
-                  重试
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Stories List */}
-          {!loading && !error && updatedStories.length > 0 && (
-            <>
-              <div className="divide-y divide-border/30">
-                {updatedStories.map((story, index) => (
-                  <StoryCard key={story.id} story={story} index={index} />
-                ))}
-              </div>
-              
-              {/* Infinite Scroll Trigger */}
-              {hasMore && (
-                <div ref={observe} className="flex justify-center py-8">
-                  {loadingMore ? (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>加载更多文章...</span>
-                    </div>
-                  ) : (
-                    <div className="text-muted-foreground text-sm">
-                      滚动查看更多
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              {/* End Message */}
-              {!hasMore && !loadingMore && (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground text-sm">
-                    已加载全部文章 ({updatedStories.length} 篇)
-                  </p>
-                </div>
-              )}
-            </>
-          )}
-
-          {/* Empty State */}
-          {!loading && !error && updatedStories.length === 0 && (
-            <Card className="text-center p-8">
-              <CardContent>
-                <p className="text-muted-foreground">暂无数据</p>
-              </CardContent>
-            </Card>
-          )}
+          {renderStoryFeed('正在获取最热新闻...', 'ai')}
         </TabsContent>
 
         <TabsContent value="best" className="mt-6">
-          {/* Loading State */}
-          {loading && (
-            <div className="space-y-4">
-              <LoadingSpinner 
-                message="正在获取最受欢迎新闻..." 
-                variant="sparkle" 
-                size="lg"
-              />
-              <StoryCardSkeleton count={3} />
-            </div>
-          )}
-
-          {/* Error State */}
-          {error && !loading && (
-            <Card className="text-center p-8">
-              <CardContent>
-                <h3 className="font-medium mb-2 text-destructive">获取数据失败</h3>
-                <p className="text-sm text-muted-foreground mb-4">{error}</p>
-                <Button
-                  onClick={() => fetchStories(activeTab)}
-                  variant="destructive"
-                >
-                  重试
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Stories List */}
-          {!loading && !error && updatedStories.length > 0 && (
-            <>
-              <div className="divide-y divide-border/30">
-                {updatedStories.map((story, index) => (
-                  <StoryCard key={story.id} story={story} index={index} />
-                ))}
-              </div>
-              
-              {/* Infinite Scroll Trigger */}
-              {hasMore && (
-                <div ref={observe} className="flex justify-center py-8">
-                  {loadingMore ? (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>加载更多文章...</span>
-                    </div>
-                  ) : (
-                    <div className="text-muted-foreground text-sm">
-                      滚动查看更多
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              {/* End Message */}
-              {!hasMore && !loadingMore && (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground text-sm">
-                    已加载全部文章 ({updatedStories.length} 篇)
-                  </p>
-                </div>
-              )}
-            </>
-          )}
-
-          {/* Empty State */}
-          {!loading && !error && updatedStories.length === 0 && (
-            <Card className="text-center p-8">
-              <CardContent>
-                <p className="text-muted-foreground">暂无数据</p>
-              </CardContent>
-            </Card>
-          )}
+          {renderStoryFeed('正在获取最受欢迎新闻...', 'sparkle')}
         </TabsContent>
 
         <TabsContent value="new" className="mt-6">
-          {/* Loading State */}
-          {loading && (
-            <div className="space-y-4">
-              <LoadingSpinner 
-                message="正在获取最新文章..." 
-                variant="default" 
-                size="lg"
-              />
-              <StoryCardSkeleton count={3} />
-            </div>
-          )}
-
-          {/* Error State */}
-          {error && !loading && (
-            <Card className="text-center p-8">
-              <CardContent>
-                <h3 className="font-medium mb-2 text-destructive">获取数据失败</h3>
-                <p className="text-sm text-muted-foreground mb-4">{error}</p>
-                <Button
-                  onClick={() => fetchStories(activeTab)}
-                  variant="destructive"
-                >
-                  重试
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Stories List */}
-          {!loading && !error && updatedStories.length > 0 && (
-            <>
-              <div className="divide-y divide-border/30">
-                {updatedStories.map((story, index) => (
-                  <StoryCard key={story.id} story={story} index={index} />
-                ))}
-              </div>
-              
-              {/* Infinite Scroll Trigger */}
-              {hasMore && (
-                <div ref={observe} className="flex justify-center py-8">
-                  {loadingMore ? (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>加载更多文章...</span>
-                    </div>
-                  ) : (
-                    <div className="text-muted-foreground text-sm">
-                      滚动查看更多
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              {/* End Message */}
-              {!hasMore && !loadingMore && (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground text-sm">
-                    已加载全部文章 ({updatedStories.length} 篇)
-                  </p>
-                </div>
-              )}
-            </>
-          )}
-
-          {/* Empty State */}
-          {!loading && !error && updatedStories.length === 0 && (
-            <Card className="text-center p-8">
-              <CardContent>
-                <p className="text-muted-foreground">暂无数据</p>
-              </CardContent>
-            </Card>
-          )}
+          {renderStoryFeed('正在获取最新文章...', 'default')}
         </TabsContent>
       </Tabs>
     </div>

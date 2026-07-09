@@ -38,7 +38,6 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "dotenv": "^16.5.0",
-    "drizzle-kit": "^0.24.0",
     "drizzle-orm": "^0.33.0",
     "jsdom": "^26.1.0",
     "lucide-react": "^0.446.0",
@@ -56,12 +55,11 @@
     "winston": "^3.17.0"
   },
   "devDependencies": {
-    "@rspack/cli": "^1.0.8",
-    "@rspack/core": "^1.0.8",
     "@types/node": "^20",
     "@types/pg": "^8.15.4",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "drizzle-kit": "^0.24.0",
     "eslint": "^8",
     "eslint-config-next": "14.2.13",
     "typescript": "^5"

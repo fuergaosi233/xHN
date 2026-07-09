@@ -114,9 +114,17 @@ export async function GET(request: NextRequest) {
       page,
       limit,
       hasMore: sortedStories.length === limit, // 如果返回的数量等于limit，说明可能还有更多
-      message: storiesToProcess.length > 0 
+      message: storiesToProcess.length > 0
         ? `${storiesToProcess.length} 篇文章正在处理中，请稍后刷新查看结果`
         : '所有文章已处理完成'
+    }, {
+      headers: {
+        // 全部命中翻译缓存时允许反代/CDN 缓存一分钟；还有条目在翻译时禁止缓存，
+        // 否则"正在处理中"的占位会被缓存住
+        'Cache-Control': storiesToProcess.length === 0
+          ? 'public, s-maxage=60, stale-while-revalidate=300'
+          : 'no-store'
+      }
     })
     
   } catch (error) {

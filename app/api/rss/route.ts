@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { processedStories, ProcessedStory } from '@/lib/db/schema'
+import { processedStories } from '@/lib/db/schema'
 import { desc, and, isNotNull } from 'drizzle-orm'
 import { log } from '@/lib/logger'
 
@@ -27,8 +27,18 @@ export async function GET(request: NextRequest) {
     }
 
     const database = await getDb()
+    // 只取 RSS 需要的列，content 列存有最大 100KB 的原文，整行 select 一次要搬几 MB
     const items = await database
-      .select()
+      .select({
+        storyId: processedStories.storyId,
+        title: processedStories.title,
+        url: processedStories.url,
+        chineseTitle: processedStories.chineseTitle,
+        summary: processedStories.summary,
+        category: processedStories.category,
+        originalData: processedStories.originalData,
+        createdAt: processedStories.createdAt,
+      })
       .from(processedStories)
       .where(and(
         isNotNull(processedStories.chineseTitle),
@@ -51,7 +61,7 @@ export async function GET(request: NextRequest) {
     <lastBuildDate>${now}</lastBuildDate>
     <atom:link href="${baseUrl}/api/rss?type=${type}" rel="self" type="application/rss+xml"/>
     <generator>xHN RSS Generator</generator>
-    ${items.map((item: ProcessedStory) => {
+    ${items.map((item: typeof items[number]) => {
       const originalData = item.originalData as any || {}
       return `
     <item>

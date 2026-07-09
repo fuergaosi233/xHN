@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
-import { processedStories, ProcessedStory } from '@/lib/db/schema'
+import { processedStories } from '@/lib/db/schema'
 import { inArray, and, isNotNull } from 'drizzle-orm'
 import { log } from '@/lib/logger'
 
@@ -21,8 +21,14 @@ export async function POST(request: NextRequest) {
     }
 
     const database = await getDb()
+    // 只取轮询需要的列，避免把 content 大字段也搬出来（一次最多 200 行）
     const updatedStories = await database
-      .select()
+      .select({
+        storyId: processedStories.storyId,
+        chineseTitle: processedStories.chineseTitle,
+        summary: processedStories.summary,
+        updatedAt: processedStories.updatedAt,
+      })
       .from(processedStories)
       .where(
         and(
@@ -32,7 +38,7 @@ export async function POST(request: NextRequest) {
         )
       )
 
-    const updates = updatedStories.map((story: ProcessedStory) => ({
+    const updates = updatedStories.map((story: typeof updatedStories[number]) => ({
       id: story.storyId,
       title_cn: story.chineseTitle,
       summary_cn: story.summary,
