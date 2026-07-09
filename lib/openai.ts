@@ -163,6 +163,23 @@ async function fetchHtmlViaLadder(url: string): Promise<string> {
   return String(response.data)
 }
 
+// 通过 nodriver（反检测浏览器服务）抓取：过 DataDome / 交互 Turnstile 等硬墙，
+// 并对 X/Twitter 推文走 syndication API。NODRIVER_URL 形如 http://xhn-nodriver:8000
+async function fetchHtmlViaNodriver(url: string): Promise<string> {
+  const base = process.env.NODRIVER_URL
+  if (!base) {
+    throw new Error('NODRIVER_URL not configured')
+  }
+  const timeout = parseInt(process.env.CONTENT_TIMEOUT || '40000')
+  const response = await axios.get(`${base.replace(/\/$/, '')}/fetch`, {
+    params: { url },
+    timeout: timeout + 15000,
+    maxContentLength: 20 * 1024 * 1024,
+    responseType: 'text'
+  })
+  return String(response.data)
+}
+
 // 抽出的正文疑似反爬 / 挑战 / 付费壳页（内容短且含验证话术）→ 不可用
 function looksLikeWall(text: string): boolean {
   const t = text.trim()
@@ -177,6 +194,7 @@ async function fetchWebContent(url: string): Promise<WebContentResult> {
   const strategies: Array<{ name: string; fn: () => Promise<string> }> = [
     { name: 'flaresolverr', fn: () => fetchHtmlViaFlareSolverr(url) },
     { name: 'ladder', fn: () => fetchHtmlViaLadder(url) },
+    { name: 'nodriver', fn: () => fetchHtmlViaNodriver(url) },
     { name: 'chrome', fn: () => fetchHtmlViaBrowser(url) },
     { name: 'axios', fn: () => fetchHtmlViaAxios(url) },
   ]
