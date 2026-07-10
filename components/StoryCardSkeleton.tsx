@@ -1,4 +1,3 @@
-import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 
 interface StoryCardSkeletonProps {
@@ -7,44 +6,26 @@ interface StoryCardSkeletonProps {
 
 export function StoryCardSkeleton({ count = 1 }: StoryCardSkeletonProps) {
   return (
-    <>
+    <div className="divide-y divide-hairline">
       {Array.from({ length: count }).map((_, index) => (
-        <Card key={index} className="hover:shadow-sm transition-all duration-300 border-l-0 border-r-0 border-t-0 border-b-0 last:border-b">
-          <CardContent className="py-6 px-6">
-            <div className="space-y-4">
-              {/* Title skeleton */}
+        <div key={index} className="py-7">
+          <div className="flex gap-4">
+            <Skeleton className="hidden sm:block w-10 h-10 rounded-xl shrink-0 mt-1" />
+            <div className="flex-1 space-y-3">
+              <Skeleton className="h-3 w-40 rounded-full" />
               <div className="space-y-2">
-                <Skeleton className="h-6 w-full" />
-                <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-6 w-11/12 rounded-md" />
+                <Skeleton className="h-6 w-2/3 rounded-md" />
               </div>
-              
-              {/* Summary skeleton */}
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-5/6" />
-                <Skeleton className="h-4 w-4/5" />
-              </div>
-              
-              {/* Meta information skeleton */}
-              <div className="flex items-center justify-between pt-2 border-t border-border/30">
-                <div className="flex items-center gap-4">
-                  <Skeleton className="h-3 w-16" />
-                  <Skeleton className="h-3 w-12" />
-                  <Skeleton className="h-3 w-8" />
-                  <Skeleton className="h-3 w-10" />
-                </div>
-                
-                <div className="flex items-center gap-1">
-                  <Skeleton className="h-8 w-8 rounded" />
-                  <Skeleton className="h-8 w-8 rounded" />
-                  <Skeleton className="h-8 w-16 rounded" />
-                </div>
+              <div className="space-y-2 pt-1">
+                <Skeleton className="h-4 w-full rounded-md" />
+                <Skeleton className="h-4 w-5/6 rounded-md" />
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       ))}
-    </>
+    </div>
   )
 }
 

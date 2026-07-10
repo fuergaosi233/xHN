@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { Moon, Sun, Monitor } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { useTheme } from '@/lib/hooks/useTheme'
 
 export function ThemeToggle() {
@@ -16,9 +15,9 @@ export function ThemeToggle() {
 
   if (!mounted) {
     return (
-      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-        <div className="h-4 w-4 bg-muted animate-pulse rounded" />
-      </Button>
+      <span className="h-9 w-9 inline-flex items-center justify-center">
+        <span className="h-[1.05rem] w-[1.05rem] bg-muted animate-pulse rounded-full" />
+      </span>
     )
   }
 
@@ -35,13 +34,13 @@ export function ThemeToggle() {
   const getIcon = () => {
     switch (theme) {
       case 'light':
-        return <Sun className="h-4 w-4" />
+        return <Sun className="h-[1.05rem] w-[1.05rem]" />
       case 'dark':
-        return <Moon className="h-4 w-4" />
+        return <Moon className="h-[1.05rem] w-[1.05rem]" />
       case 'system':
-        return <Monitor className="h-4 w-4" />
+        return <Monitor className="h-[1.05rem] w-[1.05rem]" />
       default:
-        return <Sun className="h-4 w-4" />
+        return <Sun className="h-[1.05rem] w-[1.05rem]" />
     }
   }
 
@@ -59,16 +58,13 @@ export function ThemeToggle() {
   }
 
   return (
-    <Button
-      variant="ghost"
-      size="sm"
+    <button
       onClick={cycleTheme}
-      className="h-8 w-8 p-0 hover:bg-accent/70 transition-all duration-200"
+      className="h-9 w-9 inline-flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
       title={getTooltip()}
+      aria-label={getTooltip()}
     >
-      <div className="transition-transform duration-300 hover:scale-110">
-        {getIcon()}
-      </div>
-    </Button>
+      {getIcon()}
+    </button>
   )
 }

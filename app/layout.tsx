@@ -2,17 +2,17 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://xhn.vercel.app'),
-  title: 'xHN - 智能科技新闻聚合平台',
-  description: 'Never accept the world as it appears to be. always dare to see it for what it could be.',
-  keywords: 'Hacker News, 科技新闻, AI摘要, 技术资讯, xHN',
-  authors: [{ name: 'xHN Team' }],
+  metadataBase: new URL('https://xhn.holegots.com'),
+  title: 'xHN · Hacker News 中文速读',
+  description: '实时聚合 Hacker News，AI 翻译标题、提炼中文摘要，让你几分钟读懂全球科技圈在讨论什么。',
+  keywords: 'Hacker News, 科技新闻, AI摘要, 技术资讯, 中文, xHN',
+  authors: [{ name: 'xHN' }],
   creator: 'xHN',
   publisher: 'xHN',
   openGraph: {
-    title: 'xHN - 智能科技新闻聚合平台',
-    description: 'Never accept the world as it appears to be. always dare to see it for what it could be.',
-    url: 'https://xhn.vercel.app',
+    title: 'xHN · Hacker News 中文速读',
+    description: '实时聚合 Hacker News，AI 翻译标题、提炼中文摘要，让你几分钟读懂全球科技圈在讨论什么。',
+    url: 'https://xhn.holegots.com',
     siteName: 'xHN',
     images: [
       {
@@ -27,8 +27,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'xHN - 智能科技新闻聚合平台',
-    description: 'Never accept the world as it appears to be. always dare to see it for what it could be.',
+    title: 'xHN · Hacker News 中文速读',
+    description: '实时聚合 Hacker News，AI 翻译标题、提炼中文摘要。',
     images: ['/og-image.svg'],
   },
   icons: {
@@ -48,7 +48,10 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#ffffff',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#000000' },
+  ],
 }
 
 import { ThemeProvider } from '@/lib/hooks/useTheme'
@@ -66,73 +69,58 @@ export default function RootLayout({
       <body className="prevent-horizontal-scroll">
         <ThemeProvider>
           <WebSocketProvider>
-            <header className="border-b bg-card">
-            <div className="max-w-4xl mx-auto px-4 py-8">
-              <div className="relative">
-                <div className="absolute top-0 right-0">
+            {/* 顶部毛玻璃细导航栏（Apple 同款） */}
+            <header className="sticky top-0 z-40 glass border-b border-hairline">
+              <div className="max-w-feed mx-auto px-5 h-14 flex items-center justify-between">
+                <a href="/" className="flex items-baseline gap-2 group">
+                  <span className="text-[1.35rem] font-semibold tracking-[-0.03em] text-foreground">xHN</span>
+                  <span className="hidden sm:inline text-[0.8rem] text-muted-foreground tracking-tight">
+                    Hacker News · 中文
+                  </span>
+                </a>
+                <div className="flex items-center gap-0.5">
+                  <a
+                    href="/api/rss"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="RSS 订阅"
+                    className="h-9 w-9 inline-flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                  >
+                    <svg className="w-[1.05rem] h-[1.05rem] fill-current" viewBox="0 0 24 24">
+                      <path d="M6.18 15.64a2.18 2.18 0 1 1 0 4.36 2.18 2.18 0 0 1 0-4.36zM4 4.44A15.56 15.56 0 0 1 19.56 20h-2.83A12.73 12.73 0 0 0 4 7.27V4.44zm0 5.66a9.9 9.9 0 0 1 9.9 9.9h-2.83A7.07 7.07 0 0 0 4 12.93V10.1z"/>
+                    </svg>
+                  </a>
+                  <a
+                    href="https://github.com/fuergaosi233/xhn"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="GitHub"
+                    className="h-9 w-9 inline-flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                  >
+                    <svg className="w-[1.1rem] h-[1.1rem] fill-current" viewBox="0 0 24 24">
+                      <path d="M12 0C5.374 0 0 5.373 0 12 0 17.302 3.438 21.8 8.207 23.387c.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
+                    </svg>
+                  </a>
                   <ThemeToggle />
                 </div>
-                <div className="text-center space-y-3">
-                  <div className="flex items-center justify-center gap-3">
-                    <span className="text-3xl">🧠</span>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
-                      xHN
-                    </h1>
-                  </div>
-                <p className="text-sm text-muted-foreground">
-                  Never accept the world as it appears to be. always dare to see it for what it could be.
-                </p>
-                <div className="flex items-center justify-center gap-2 sm:gap-3 pt-1 flex-wrap">
-                  <a 
-                    href="https://github.com/fuergaosi233/xhn" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="px-2 py-1 bg-gradient-to-r from-gray-500/10 to-gray-600/10 border border-gray-200/30 rounded-full hover:opacity-80 transition-opacity text-xs"
-                  >
-                    <div className="flex items-center gap-1">
-                      <svg className="w-3 h-3 fill-current text-gray-600" viewBox="0 0 24 24">
-                        <path d="M12 0C5.374 0 0 5.373 0 12 0 17.302 3.438 21.8 8.207 23.387c.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/>
-                      </svg>
-                      <span className="text-xs text-gray-600">GitHub</span>
-                    </div>
-                  </a>
-                  <a 
-                    href="/api/rss" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="px-2 py-1 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-200/30 rounded-full hover:opacity-80 transition-opacity text-xs"
-                  >
-                    <div className="flex items-center gap-1">
-                      <svg className="w-3 h-3 fill-current text-orange-600" viewBox="0 0 24 24">
-                        <path d="M4.103 4.103A10.875 10.875 0 0 0 1.5 12c0 3.014 1.235 5.737 3.228 7.696a.75.75 0 1 1-1.091 1.03A12.375 12.375 0 0 1 0 12C0 5.373 5.373 0 12 0s12 5.373 12 12-5.373 12-12 12a12.34 12.34 0 0 1-7.637-2.637.75.75 0 1 1 .94-1.175 10.84 10.84 0 0 0 6.697 2.312c6.016 0 10.875-4.859 10.875-10.875S18.016 1.125 12 1.125 1.125 6.109 1.125 12c0 3.014 1.235 5.737 3.228 7.696a.75.75 0 1 1-1.091 1.03A10.875 10.875 0 0 1 4.103 4.103z"/>
-                        <path d="M2.25 12.75a3.75 3.75 0 0 1 3.75-3.75h.75v1.5H6A2.25 2.25 0 0 0 3.75 12.75v.75H2.25v-.75z"/>
-                        <circle cx="6" cy="18" r="1.5"/>
-                      </svg>
-                      <span className="text-xs text-orange-600">RSS</span>
-                    </div>
-                  </a>
-                  <div className="px-3 py-1 bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-200/30 rounded-full">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-pulse"></div>
-                      <a 
-                        href="https://www.volcengine.com/product/ark" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-xs font-medium bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hover:opacity-80 transition-opacity"
-                      >
-                        Powered by Doubao 1.6
-                      </a>
-                      <span className="text-xs">🚀</span>
-                    </div>
-                  </div>
-                </div>
-                </div>
               </div>
-            </div>
-          </header>
-            <main className="max-w-4xl mx-auto px-4 py-8">
+            </header>
+            <main className="max-w-feed mx-auto px-5">
               {children}
             </main>
+            <footer className="max-w-feed mx-auto px-5 py-10 mt-8 border-t border-hairline">
+              <p className="text-[0.8rem] text-muted-foreground">
+                实时聚合 Hacker News，AI 生成中文标题与摘要 ·{' '}
+                <a
+                  href="https://www.volcengine.com/product/ark"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground transition-colors"
+                >
+                  Powered by Doubao
+                </a>
+              </p>
+            </footer>
           </WebSocketProvider>
         </ThemeProvider>
         <Analytics />

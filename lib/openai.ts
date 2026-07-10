@@ -254,7 +254,7 @@ async function translateTitleOnly(title: string, modelConfig: ReturnType<typeof 
     const requestBody: any = {
       model: modelConfig.model,
       messages: [
-        { role: 'system', content: '你是专业的技术新闻翻译助手，只把英文标题翻译成准确、地道的中文，直接输出译文，不要加任何解释或前缀。' },
+        { role: 'system', content: '你是资深科技媒体编辑。把这条 Hacker News 英文标题翻译成准确、地道的中文：保留专有名词、产品名与技术术语，保留 "Show HN""Ask HN" 等前缀语义（如"作品分享：""提问："），不加书名号、不加多余修饰。只直接输出中文译文，不要任何解释或前缀。' },
         { role: 'user', content: title }
       ],
       max_tokens: 100,
@@ -311,44 +311,40 @@ export async function processWithAI(title: string, url?: string): Promise<AIProc
     }
     
     // 获取可配置的 Prompt
-    const systemPrompt = process.env.AI_SYSTEM_PROMPT || 
-      "你是一个专业的技术新闻翻译和摘要助手，擅长将英文技术新闻翻译成准确、流畅的中文。基于提供的内容进行分析和总结。"
-    
-    const userPromptTemplate = webContent?.cleanedContent 
-      ? process.env.AI_USER_PROMPT_TEMPLATE_WITH_CONTENT || `
-请为以下英文文章生成中文翻译和摘要：
+    const systemPrompt = process.env.AI_SYSTEM_PROMPT ||
+      "你是资深科技媒体的中文主编，为中文技术读者服务。你熟悉软硬件、AI、开源与创业领域的术语和圈内惯例，能把 Hacker News 的英文内容翻译成准确、地道、克制的中文，并提炼出高信息密度、可替代点开原文的客观摘要。"
 
-【原标题】{title}
-【文章内容】{content}
-{url_info}
-
-请按以下格式回复：
-中文标题：[这里是中文翻译的标题]
-摘要：[这里是基于文章内容的详细中文摘要，200字以内]
-分类：[文章的技术分类，如：AI/机器学习、前端开发、后端架构等]
-标签：[相关技术标签，用逗号分隔]
-
-要求：
-1. 中文标题要准确且符合中文表达习惯
-2. 摘要要基于实际内容，突出文章要点和技术细节
-3. 分类要准确反映文章的技术领域
-4. 标签要包含文章中提到的主要技术和概念
-`
-      : process.env.AI_USER_PROMPT_TEMPLATE || `
-请为以下英文标题生成中文翻译和摘要：
+    const userPromptTemplate = webContent?.cleanedContent
+      ? process.env.AI_USER_PROMPT_TEMPLATE_WITH_CONTENT || `下面是一篇 Hacker News 上的英文文章，请翻译标题并基于正文写摘要。
 
 【原标题】{title}
 {url_info}
+【正文】
+{content}
 
-请按以下格式回复：
-中文标题：[这里是中文翻译的标题]
-摘要：[这里是简洁的中文摘要，不超过100字]
+严格按以下格式输出，不要有任何多余文字：
+中文标题：<标题的中文翻译>
+摘要：<基于正文的中文摘要>
+分类：<一个最贴切的分类>
+标签：<2-4个技术标签，用逗号分隔>
+
+写作要求：
+- 标题：准确传达原意、符合中文科技媒体的表达习惯；保留专有名词、产品名、公司名与技术术语（必要时中英并存）；保留 "Show HN""Ask HN" 等前缀的语义（如"作品分享：""提问："）；不要加书名号，不要夸张修饰。
+- 摘要：120–180字。第一句直接说清最核心的事实、结论或发布内容，禁止用"本文介绍""该文章探讨""这篇文章"之类的空话开头。客观陈述文章讲了什么、关键数据/结论/技术细节，让读者读完就能掌握要点。只依据正文，不臆测、不编造正文中没有的信息。
+- 分类：从 AI/机器学习、编程语言、Web开发、后端/基础设施、安全、硬件、数据库、创业/商业、科学 等中选最贴切的一个。
+- 标签：正文中真实出现的关键技术、产品或概念。`
+      : process.env.AI_USER_PROMPT_TEMPLATE || `下面是一条 Hacker News 的英文标题（没有正文可参考）。
+
+【标题】{title}
+{url_info}
+
+严格按以下格式输出：
+中文标题：<标题的中文翻译>
+摘要：<一句话说明这条内容大概在讲什么，20–40字>
 
 要求：
-1. 中文标题要准确且符合中文表达习惯
-2. 摘要要简洁明了，突出重点
-3. 如果是技术类文章，请保留重要的技术术语
-`
+- 标题准确、地道，保留专有名词与 "Show HN""Ask HN" 等前缀的语义，不加书名号。
+- 摘要只依据标题合理概括，绝不编造标题里没有的细节；若标题本身信息不足，就据实简述。`
     
     // 替换模板变量（使用函数形式，避免正文中的 $& 等模式被 String.replace 特殊解释）
     const maxContentChars = parseInt(process.env.AI_MAX_CONTENT_CHARS || '8000')

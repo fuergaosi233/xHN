@@ -19,9 +19,12 @@ module.exports = {
         'hn-orange': '#ff6600',
         'hn-bg': '#f6f6ef',
         border: "hsl(var(--border))",
+        hairline: "hsl(var(--hairline))",
+        link: "hsl(var(--link))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
+        "background-subtle": "hsl(var(--background-subtle))",
         foreground: "hsl(var(--foreground))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
@@ -70,6 +73,9 @@ module.exports = {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+      },
+      maxWidth: {
+        feed: "44rem",
       },
     },
   },

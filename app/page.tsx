@@ -2,14 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import StoryCard from '@/components/StoryCard'
-import LoadingSpinner from '@/components/LoadingSpinner'
 import StoryCardSkeleton from '@/components/StoryCardSkeleton'
 import { ProcessedItem } from '@/lib/hackernews'
 import { TrendingUp, Star, Clock, Loader2 } from 'lucide-react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 import { useInfiniteScroll } from '@/lib/hooks/useInfiniteScroll'
 import { useStoryUpdates } from '@/lib/hooks/useStoryUpdates'
 import { useWebSocketUpdates } from '@/lib/hooks/useWebSocketUpdates'
@@ -151,119 +148,97 @@ export default function Home() {
     fetchStories(activeTab, 0, false, true)
   }
 
-  // 三个标签页共用同一份加载/错误/列表/无限滚动渲染逻辑，只有加载文案和动画风格不同
-  const renderStoryFeed = (loadingMessage: string, loadingVariant: 'ai' | 'sparkle' | 'default') => (
-    <>
-      {/* Loading State */}
+  const TABS: { key: TabType; label: string; icon: typeof TrendingUp }[] = [
+    { key: 'top', label: '最热', icon: TrendingUp },
+    { key: 'best', label: '最受欢迎', icon: Star },
+    { key: 'new', label: '最新', icon: Clock },
+  ]
+
+  return (
+    <div>
+      {/* 页面主标题（Apple 编辑页那种大标题 + 副题） */}
+      <div className="pt-12 pb-8">
+        <h1 className="display-title text-[2.4rem] sm:text-[3rem] text-foreground">
+          今日 Hacker News
+        </h1>
+        <p className="mt-3 text-[1.05rem] text-muted-foreground leading-relaxed max-w-xl">
+          实时聚合全球科技圈的讨论，AI 翻译标题、提炼摘要，中文速读。
+        </p>
+      </div>
+
+      {/* 分段切换（iOS 分段控件风格），吸附在导航栏下方 */}
+      <div className="sticky top-14 z-30 -mx-5 px-5 py-3 glass border-b border-hairline">
+        <div className="inline-flex items-center gap-1 p-1 rounded-full bg-muted">
+          {TABS.map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => handleTabChange(key)}
+              className={cn(
+                'inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-[0.85rem] font-medium transition-all duration-200',
+                activeTab === key
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Loading */}
       {loading && (
-        <div className="space-y-4">
-          <LoadingSpinner
-            message={loadingMessage}
-            variant={loadingVariant}
-            size="lg"
-          />
-          <StoryCardSkeleton count={3} />
+        <div className="pt-2">
+          <StoryCardSkeleton count={4} />
         </div>
       )}
 
-      {/* Error State */}
+      {/* Error */}
       {error && !loading && (
-        <Card className="text-center p-8">
-          <CardContent>
-            <h3 className="font-medium mb-2 text-destructive">获取数据失败</h3>
-            <p className="text-sm text-muted-foreground mb-4">{error}</p>
-            <Button
-              onClick={() => fetchStories(activeTab)}
-              variant="destructive"
-            >
-              重试
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="text-center py-24">
+          <p className="headline text-lg text-foreground mb-2">获取数据失败</p>
+          <p className="text-sm text-muted-foreground mb-6">{error}</p>
+          <Button onClick={() => fetchStories(activeTab)} className="rounded-full">重试</Button>
+        </div>
       )}
 
-      {/* Stories List */}
+      {/* List */}
       {!loading && !error && updatedStories.length > 0 && (
         <>
-          <div className="divide-y divide-border/30">
+          <div className="divide-y divide-hairline">
             {updatedStories.map((story, index) => (
               <StoryCard key={story.id} story={story} index={index} />
             ))}
           </div>
 
-          {/* Infinite Scroll Trigger */}
           {hasMore && (
-            <div ref={observe} className="flex justify-center py-8">
+            <div ref={observe} className="flex justify-center py-10">
               {loadingMore ? (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>加载更多文章...</span>
+                <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  加载更多…
                 </div>
               ) : (
-                <div className="text-muted-foreground text-sm">
-                  滚动查看更多
-                </div>
+                <span className="text-muted-foreground/60 text-sm">向下滚动加载更多</span>
               )}
             </div>
           )}
 
-          {/* End Message */}
           {!hasMore && !loadingMore && (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground text-sm">
-                已加载全部文章 ({updatedStories.length} 篇)
-              </p>
+            <div className="text-center py-10">
+              <p className="text-muted-foreground/60 text-sm">已经到底啦 · 共 {updatedStories.length} 篇</p>
             </div>
           )}
         </>
       )}
 
-      {/* Empty State */}
+      {/* Empty */}
       {!loading && !error && updatedStories.length === 0 && (
-        <Card className="text-center p-8">
-          <CardContent>
-            <p className="text-muted-foreground">暂无数据</p>
-          </CardContent>
-        </Card>
-      )}
-    </>
-  )
-
-  return (
-    <div className="space-y-8 max-w-4xl mx-auto">
-      
-      {/* Main Content */}
-      <Tabs defaultValue="top" value={activeTab} onValueChange={(value) => handleTabChange(value as TabType)}>
-        <div className="flex justify-center mb-8">
-          <TabsList className="grid w-full max-w-[600px] grid-cols-3">
-            <TabsTrigger value="top" className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4" />
-              24小时最热
-            </TabsTrigger>
-            <TabsTrigger value="best" className="flex items-center gap-2">
-              <Star className="w-4 h-4" />
-              最受欢迎
-            </TabsTrigger>
-            <TabsTrigger value="new" className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              最新文章
-            </TabsTrigger>
-          </TabsList>
+        <div className="text-center py-24">
+          <p className="text-muted-foreground">暂无数据</p>
         </div>
-
-
-        <TabsContent value="top" className="mt-6">
-          {renderStoryFeed('正在获取最热新闻...', 'ai')}
-        </TabsContent>
-
-        <TabsContent value="best" className="mt-6">
-          {renderStoryFeed('正在获取最受欢迎新闻...', 'sparkle')}
-        </TabsContent>
-
-        <TabsContent value="new" className="mt-6">
-          {renderStoryFeed('正在获取最新文章...', 'default')}
-        </TabsContent>
-      </Tabs>
+      )}
     </div>
   )
 }
