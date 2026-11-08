@@ -5,6 +5,7 @@ import { JSDOM, VirtualConsole } from 'jsdom'
 import { Readability } from '@mozilla/readability'
 import { lookup } from 'dns/promises'
 import { log } from './logger'
+import { extractImageCandidates, prepareImagesForLLM, ImageCandidate, PreparedImage, StoryImage } from './images'
 
 let openai: OpenAI | null = null
 
@@ -29,14 +30,18 @@ export interface AIProcessResult {
   tags?: string[]
   content?: string
   originalContent?: string
+  images?: StoryImage[]
 }
 
 interface WebContentResult {
   title: string
   content: string
   cleanedContent: string
+  images: ImageCandidate[]
   error?: string
 }
+
+const MAX_IMAGE_CANDIDATES = parseInt(process.env.AI_MAX_IMAGE_CANDIDATES || '6')
 
 // 通过 FlareSolverr 抓取：真浏览器 + 反检测，能过 Cloudflare/DDoS-Guard 等 JS 挑战墙。
 // 裸 headless chrome 会被这些站点识别并返回"请启用 JavaScript"的壳页，抽不到正文。
@@ -106,7 +111,7 @@ async function fetchHtmlViaAxios(url: string): Promise<string> {
 }
 
 // 从 HTML 提取正文：优先 Readability（karakeep 同款思路），失败退回选择器启发式
-function extractContent(html: string, url: string): { title: string; text: string } {
+function extractContent(html: string, url: string): { title: string; text: string; images: ImageCandidate[] } {
   const virtualConsole = new VirtualConsole() // 屏蔽第三方页面 CSS 解析报错噪音
   const dom = new JSDOM(html, { url, virtualConsole })
   const document = dom.window.document
@@ -116,7 +121,8 @@ function extractContent(html: string, url: string): { title: string; text: strin
   if (article?.textContent && article.textContent.trim().length > 200) {
     return {
       title: article.title || '',
-      text: article.textContent
+      text: article.textContent,
+      images: extractImageCandidates(document, article.content || null, url, MAX_IMAGE_CANDIDATES)
     }
   }
 
@@ -144,7 +150,8 @@ function extractContent(html: string, url: string): { title: string; text: strin
   return {
     title: document.querySelector('h1')?.textContent?.trim() ||
            document.querySelector('title')?.textContent?.trim() || '',
-    text: (contentElement || document.body)?.textContent || ''
+    text: (contentElement || document.body)?.textContent || '',
+    images: extractImageCandidates(document, (contentElement || document.body)?.innerHTML || null, url, MAX_IMAGE_CANDIDATES)
   }
 }
 
@@ -199,7 +206,7 @@ async function fetchWebContent(url: string): Promise<WebContentResult> {
     { name: 'axios', fn: () => fetchHtmlViaAxios(url) },
   ]
 
-  let best: { title: string; text: string; via: string } | null = null
+  let best: { title: string; text: string; images: ImageCandidate[]; via: string } | null = null
 
   for (const s of strategies) {
     let html: string
@@ -213,19 +220,19 @@ async function fetchWebContent(url: string): Promise<WebContentResult> {
       continue
     }
 
-    const { title, text } = extractContent(html, url)
+    const { title, text, images } = extractContent(html, url)
     const cleanLen = text.trim().length
 
     // 抽出实质正文且不像墙 → 直接采用
     if (cleanLen >= MIN_CONTENT_LEN && !looksLikeWall(text)) {
       log.debug('Fetched web content', { url, via: s.name, len: cleanLen })
       const cleanedContent = text.replace(/\s+/g, ' ').replace(/\n\s*\n/g, '\n').trim().substring(0, 50000)
-      return { title, content: text.substring(0, 100000), cleanedContent }
+      return { title, content: text.substring(0, 100000), cleanedContent, images }
     }
 
     // 否则记下最长的一版，继续尝试下一个策略
     if (!best || cleanLen > best.text.trim().length) {
-      best = { title, text, via: s.name }
+      best = { title, text, images, via: s.name }
     }
   }
 
@@ -235,7 +242,7 @@ async function fetchWebContent(url: string): Promise<WebContentResult> {
   if (best && best.text.trim().length >= MIN_USABLE_LEN && !looksLikeWall(best.text)) {
     log.debug('Using short but valid content', { url, via: best.via, len: best.text.trim().length })
     const cleanedContent = best.text.replace(/\s+/g, ' ').replace(/\n\s*\n/g, '\n').trim().substring(0, 50000)
-    return { title: best.title, content: best.text.substring(0, 100000), cleanedContent }
+    return { title: best.title, content: best.text.substring(0, 100000), cleanedContent, images: best.images }
   }
 
   // 确实抓不到实质正文：正文置空，交由上层标注"无法抓取"
@@ -244,6 +251,7 @@ async function fetchWebContent(url: string): Promise<WebContentResult> {
     title: best?.title || '',
     content: '',
     cleanedContent: '',
+    images: [],
     error: 'no substantial content extracted'
   }
 }
@@ -271,6 +279,55 @@ async function translateTitleOnly(title: string, modelConfig: ReturnType<typeof 
     log.warn('Title-only translation failed, using original title', { title, error: error instanceof Error ? error : new Error(String(error)) })
     return title
   }
+}
+
+// 多模态 user 消息：正文 prompt + 带编号的候选图 + 选图要求（追加在最后，不影响可配置的正文模板）
+function buildVisionContent(prompt: string, images: PreparedImage[]): any[] {
+  const parts: any[] = [{ type: 'text', text: prompt }, { type: 'text', text: '\n【原文候选配图】' }]
+  images.forEach((img, i) => {
+    const hints = [
+      `${img.width}×${img.height}`,
+      img.source === 'og' ? '页面分享图' : '正文插图',
+      img.alt ? `alt：${img.alt}` : '',
+      img.caption ? `原图说：${img.caption}` : '',
+    ].filter(Boolean).join('，')
+    parts.push({ type: 'text', text: `候选图 ${i + 1}（${hints}）：` })
+    parts.push({ type: 'image_url', image_url: { url: img.dataUrl } })
+  })
+  parts.push({
+    type: 'text',
+    text: `在上述格式最后再加一行：
+配图：<选 0–3 张最能帮助读者理解这篇文章的图，每张写"编号|中文图说"，多张用分号分隔；都不合适就写"无">
+
+选图要求：
+- 优先：产品/界面截图、架构图、数据图表、实验或实物照片、与报道主体直接相关的现场照片。
+- 不要：站点 logo、作者头像、广告、装饰性配图或通用素材图、纯文字截图、模糊或几乎空白的图、与正文无关的图。
+- 页面分享图只在确实有信息量（不是站点通用 banner）时选。宁缺毋滥，按重要性排序。
+- 图说 10–30 字，客观说明图里是什么，不要以"图中""这张图"开头。`
+  })
+  return parts
+}
+
+function parseImagePicks(raw: string, prepared: PreparedImage[]): StoryImage[] | undefined {
+  if (prepared.length === 0 || !raw || /^\s*无/.test(raw)) return undefined
+  const picks: StoryImage[] = []
+  const used = new Set<number>()
+  for (const part of raw.split(/[;；\n]/)) {
+    const m = part.match(/(\d+)\s*[|｜:：]\s*(.*)/) || part.match(/(\d+)/)
+    if (!m) continue
+    const idx = parseInt(m[1], 10) - 1
+    const img = prepared[idx]
+    if (!img || used.has(idx)) continue
+    used.add(idx)
+    picks.push({
+      url: img.url,
+      caption: (m[2] || '').trim().replace(/^["“]|["”]$/g, '') || undefined,
+      width: img.width,
+      height: img.height,
+    })
+    if (picks.length >= 3) break
+  }
+  return picks.length > 0 ? picks : undefined
 }
 
 export async function processWithAI(title: string, url?: string): Promise<AIProcessResult> {
@@ -355,29 +412,48 @@ export async function processWithAI(title: string, url?: string): Promise<AIProc
       .replace(/\{content\}/g, () => contentInfo)
       .replace(/\{url_info\}/g, () => urlInfo)
 
-    const requestBody: any = {
-      model: modelConfig.model,
-      messages: [
-        {
-          role: "system",
-          content: systemPrompt
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      max_tokens: webContent?.cleanedContent ? 1000 : 500,
-      temperature: modelConfig.temperature
+    // 配图：把原文候选图下载下来连同正文一起发给多模态模型，由它挑出值得放的几张并写图说。
+    // AI_VISION=off 可关闭（换成不支持图片输入的模型时）
+    const visionEnabled = process.env.AI_VISION !== 'off'
+    const prepared: PreparedImage[] = visionEnabled && url && webContent?.images?.length
+      ? await prepareImagesForLLM(webContent.images, url)
+      : []
+
+    const buildRequest = (images: PreparedImage[]) => {
+      const requestBody: any = {
+        model: modelConfig.model,
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt
+          },
+          {
+            role: "user",
+            content: images.length > 0 ? buildVisionContent(prompt, images) : prompt
+          }
+        ],
+        max_tokens: webContent?.cleanedContent ? 1000 : 500,
+        temperature: modelConfig.temperature
+      }
+
+      // 火山方舟的推理模型（如 doubao-seed-1.6-flash 250828+）默认开启 thinking，
+      // 隐藏推理会烧掉数千 output tokens；翻译任务不需要，显式关闭
+      if (process.env.AI_THINKING) {
+        requestBody.thinking = { type: process.env.AI_THINKING }
+      }
+      return requestBody
     }
 
-    // 火山方舟的推理模型（如 doubao-seed-1.6-flash 250828+）默认开启 thinking，
-    // 隐藏推理会烧掉数千 output tokens；翻译任务不需要，显式关闭
-    if (process.env.AI_THINKING) {
-      requestBody.thinking = { type: process.env.AI_THINKING }
+    let completion
+    try {
+      completion = await getOpenAIClient().chat.completions.create(buildRequest(prepared))
+    } catch (error) {
+      // 某张图被模型端拒收（格式/尺寸/内容审核）时不该连累摘要：去掉图片重试一次
+      if (prepared.length === 0) throw error
+      log.warn('Vision request failed, retrying without images', { url, images: prepared.length, error: error instanceof Error ? error : new Error(String(error)) })
+      prepared.length = 0
+      completion = await getOpenAIClient().chat.completions.create(buildRequest(prepared))
     }
-
-    const completion = await getOpenAIClient().chat.completions.create(requestBody)
 
     // 处理deepseek-r1等推理模型的特殊响应格式
     const message = completion.choices[0]?.message
@@ -390,9 +466,10 @@ export async function processWithAI(title: string, url?: string): Promise<AIProc
     
     // 改进的解析逻辑，支持多行匹配
     const chineseTitleMatch = response.match(/中文标题[：:]\s*([\s\S]+?)(?=\n摘要|\n分类|$)/)
-    const summaryMatch = response.match(/摘要[：:]\s*([\s\S]+?)(?=\n分类|\n标签|$)/)
-    const categoryMatch = response.match(/分类[：:]\s*([\s\S]+?)(?=\n标签|$)/)
-    const tagsMatch = response.match(/标签[：:]\s*([\s\S]+?)$/)
+    const summaryMatch = response.match(/摘要[：:]\s*([\s\S]+?)(?=\n分类|\n标签|\n配图|$)/)
+    const categoryMatch = response.match(/分类[：:]\s*([\s\S]+?)(?=\n标签|\n配图|$)/)
+    const tagsMatch = response.match(/标签[：:]\s*([\s\S]+?)(?=\n配图|$)/)
+    const imagesMatch = response.match(/配图[：:]\s*([\s\S]+?)$/)
     
     const parsedTitle = chineseTitleMatch?.[1]?.trim()
     const parsedSummary = summaryMatch?.[1]?.trim()
@@ -405,13 +482,18 @@ export async function processWithAI(title: string, url?: string): Promise<AIProc
     const chineseTitle = parsedTitle || title
     const summary = parsedSummary || '暂无摘要'
     const category = categoryMatch?.[1]?.trim() || undefined
-    const tags = tagsMatch?.[1]?.trim()?.split(',').map(tag => tag.trim()).filter(tag => tag) || undefined
+    const tags = tagsMatch?.[1]?.trim()?.split(/[,，、]/).map(tag => tag.trim()).filter(tag => tag) || undefined
+    const images = parseImagePicks(imagesMatch?.[1] || '', prepared)
+    if (prepared.length > 0) {
+      log.debug('Image picks', { url, candidates: prepared.length, picked: images?.length || 0 })
+    }
     
     return {
       chineseTitle,
       summary,
       category,
       tags,
+      images,
       content: webContent?.cleanedContent,
       originalContent: webContent?.content
     }

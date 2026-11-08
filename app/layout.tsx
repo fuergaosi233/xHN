@@ -110,14 +110,14 @@ export default function RootLayout({
             </main>
             <footer className="max-w-feed mx-auto px-5 py-10 mt-8 border-t border-hairline">
               <p className="text-[0.8rem] text-muted-foreground">
-                实时聚合 Hacker News，AI 生成中文标题与摘要 ·{' '}
+                实时聚合 Hacker News，AI 生成中文标题、摘要与配图 ·{' '}
                 <a
-                  href="https://www.volcengine.com/product/ark"
+                  href="https://www.deepseek.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-foreground transition-colors"
                 >
-                  Powered by Doubao
+                  Powered by DeepSeek
                 </a>
               </p>
             </footer>

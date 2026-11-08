@@ -1,4 +1,5 @@
 import { log } from './logger'
+import type { StoryImage } from './images'
 
 export interface HackerNewsItem {
   id: number
@@ -15,6 +16,9 @@ export interface HackerNewsItem {
 export interface ProcessedItem extends HackerNewsItem {
   chineseTitle?: string
   summary?: string
+  category?: string
+  tags?: string[]
+  images?: StoryImage[]
   cached: boolean
   processingTime: number
   isUpdated?: boolean // 标记是否刚刚更新，用于动画效果

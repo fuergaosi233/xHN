@@ -2,12 +2,16 @@ import { Server as SocketIOServer } from 'socket.io'
 import { Server as HTTPServer } from 'http'
 import { NextApiResponse } from 'next'
 import { log } from './logger'
+import type { StoryImage } from './images'
 
 export interface StoryUpdateEvent {
   storyId: number
   title: string
   chineseTitle: string
   summary: string
+  category?: string
+  tags?: string[]
+  images?: StoryImage[]
   updatedAt: string
   processingTime: number
 }

@@ -10,6 +10,7 @@ export interface User {
 export interface UserPreferences {
   likedStories: Set<number>
   bookmarkedStories: Set<number>
+  readStories: Set<number> // 点开过的文章，列表里淡化显示
   // 可以添加更多偏好设置，如主题、语言等
 }
 
@@ -18,6 +19,7 @@ class UserManager {
   private preferences: UserPreferences = {
     likedStories: new Set(),
     bookmarkedStories: new Set(),
+    readStories: new Set(),
   }
 
   // 从 localStorage 恢复状态
@@ -35,6 +37,7 @@ class UserManager {
         this.preferences = {
           likedStories: new Set(data.likedStories || []),
           bookmarkedStories: new Set(data.bookmarkedStories || []),
+          readStories: new Set(data.readStories || []),
         }
       }
     } catch (error) {
@@ -47,6 +50,8 @@ class UserManager {
       const data = {
         likedStories: Array.from(this.preferences.likedStories),
         bookmarkedStories: Array.from(this.preferences.bookmarkedStories),
+        // 已读只保留最近 2000 条，避免 localStorage 无限增长
+        readStories: Array.from(this.preferences.readStories).slice(-2000),
       }
       localStorage.setItem('userPreferences', JSON.stringify(data))
     } catch (error) {
@@ -90,6 +95,16 @@ class UserManager {
     return !isCurrentlyBookmarked
   }
 
+  isRead(storyId: number): boolean {
+    return this.preferences.readStories.has(storyId)
+  }
+
+  markRead(storyId: number) {
+    if (this.preferences.readStories.has(storyId)) return
+    this.preferences.readStories.add(storyId)
+    this.savePreferences()
+  }
+
   // 获取用户数据
   getUser(): User | null {
     return this.user
@@ -116,6 +131,7 @@ class UserManager {
     this.preferences = {
       likedStories: new Set(),
       bookmarkedStories: new Set(),
+      readStories: new Set(),
     }
     
     if (typeof window !== 'undefined') {
@@ -150,6 +166,8 @@ export function useStoryActions() {
     isBookmarked: (storyId: number) => userManager.isBookmarked(storyId),
     toggleLike: (storyId: number) => userManager.toggleLike(storyId),
     toggleBookmark: (storyId: number) => userManager.toggleBookmark(storyId),
+    isRead: (storyId: number) => userManager.isRead(storyId),
+    markRead: (storyId: number) => userManager.markRead(storyId),
   }
 }
 

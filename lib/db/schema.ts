@@ -32,6 +32,7 @@ export const processedStories = pgTable('processed_stories', {
   summary: text('summary'),
   content: text('content'), // 文章正文内容，用于向量搜索
   tags: jsonb('tags'), // 从内容提取的标签
+  images: jsonb('images'), // LLM 从原文候选图里挑出的配图：[{ url, caption, width, height }]
   category: text('category'), // 文章分类
   originalData: jsonb('original_data'), // 原始HN数据
   processingTime: integer('processing_time'), // 处理耗时(ms)

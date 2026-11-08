@@ -5,6 +5,7 @@ import { eq, and, lt, desc, asc, sql, gt, inArray } from 'drizzle-orm'
 import { HackerNewsItem } from './hackernews'
 import { wsManager, StoryUpdateEvent } from './websocket'
 import { log } from './logger'
+import { StoryImage, toClientImages } from './images'
 
 export interface QueueTask {
   id: number
@@ -19,6 +20,7 @@ export interface ProcessingResult {
   summary: string
   category?: string
   tags?: string[]
+  images?: StoryImage[]
   content?: string
   originalContent?: string
   processingTime: number
@@ -218,6 +220,7 @@ class QueueManager {
         summary: result.summary,
         category: result.category,
         tags: result.tags,
+        images: result.images,
         content: result.content,
         originalContent: result.originalContent,
         processingTime,
@@ -271,6 +274,7 @@ class QueueManager {
         category: result.category,
         content: result.originalContent || result.content, // Store original content for DB
         tags: result.tags ? { tags: result.tags } : null,
+        images: result.images || null,
         processingTime: result.processingTime,
         modelUsed: result.modelUsed,
         expiresAt
@@ -283,6 +287,7 @@ class QueueManager {
           category: result.category,
           content: result.originalContent || result.content,
           tags: result.tags ? { tags: result.tags } : null,
+          images: result.images || null,
           processingTime: result.processingTime,
           modelUsed: result.modelUsed,
           updatedAt: now,
@@ -297,6 +302,9 @@ class QueueManager {
         title: task.title,
         chineseTitle: result.chineseTitle,
         summary: result.summary,
+        category: result.category,
+        tags: result.tags,
+        images: toClientImages(result.images),
         updatedAt: now.toISOString(),
         processingTime: result.processingTime
       }

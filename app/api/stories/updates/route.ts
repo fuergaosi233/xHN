@@ -3,6 +3,7 @@ import { getDb } from '@/lib/db'
 import { processedStories } from '@/lib/db/schema'
 import { inArray, and, isNotNull } from 'drizzle-orm'
 import { log } from '@/lib/logger'
+import { toClientImages } from '@/lib/images'
 
 // 强制此路由为动态
 export const dynamic = 'force-dynamic'
@@ -27,6 +28,9 @@ export async function POST(request: NextRequest) {
         storyId: processedStories.storyId,
         chineseTitle: processedStories.chineseTitle,
         summary: processedStories.summary,
+        category: processedStories.category,
+        tags: processedStories.tags,
+        images: processedStories.images,
         updatedAt: processedStories.updatedAt,
       })
       .from(processedStories)
@@ -42,6 +46,9 @@ export async function POST(request: NextRequest) {
       id: story.storyId,
       title_cn: story.chineseTitle,
       summary_cn: story.summary,
+      category: story.category || undefined,
+      tags: (story.tags as any)?.tags || undefined,
+      images: toClientImages(story.images),
       updated_at: story.updatedAt
     }))
 

@@ -5,6 +5,7 @@ import { getDb } from '@/lib/db'
 import { processedStories } from '@/lib/db/schema'
 import { inArray } from 'drizzle-orm'
 import { log } from '@/lib/logger'
+import { toClientImages } from '@/lib/images'
 
 const hnAPI = new HackerNewsAPI()
 
@@ -48,6 +49,9 @@ export async function GET(request: NextRequest) {
         storyId: processedStories.storyId,
         chineseTitle: processedStories.chineseTitle,
         summary: processedStories.summary,
+        category: processedStories.category,
+        tags: processedStories.tags,
+        images: processedStories.images,
         processingTime: processedStories.processingTime,
       })
       .from(processedStories)
@@ -75,6 +79,9 @@ export async function GET(request: NextRequest) {
           ...story,
           chineseTitle: translation.chineseTitle,
           summary: translation.summary,
+          category: translation.category || undefined,
+          tags: (translation.tags as any)?.tags || undefined,
+          images: toClientImages(translation.images),
           cached: true,
           processingTime: translation.processingTime || 0
         })

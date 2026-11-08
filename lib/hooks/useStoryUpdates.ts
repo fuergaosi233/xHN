@@ -5,6 +5,9 @@ interface StoryUpdate {
   id: number
   title_cn: string | null
   summary_cn: string | null
+  category?: string
+  tags?: string[]
+  images?: ProcessedItem['images']
   updated_at: string | null
 }
 
@@ -64,7 +67,10 @@ export function useStoryUpdates(stories: ProcessedItem[]) {
                 return {
                   ...story,
                   chineseTitle: update.title_cn,
-                  summary: update.summary_cn
+                  summary: update.summary_cn,
+                  category: update.category,
+                  tags: update.tags,
+                  images: update.images
                 }
               }
               return story

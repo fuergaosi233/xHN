@@ -7,6 +7,9 @@ interface StoryUpdateEvent {
   title: string
   chineseTitle: string
   summary: string
+  category?: string
+  tags?: string[]
+  images?: ProcessedItem['images']
   updatedAt: string
   processingTime: number
 }
@@ -54,6 +57,9 @@ export function useWebSocketUpdates(stories: ProcessedItem[], roomType: 'top-sto
             ...story,
             chineseTitle: update.chineseTitle,
             summary: update.summary,
+            category: update.category,
+            tags: update.tags,
+            images: update.images,
             cached: true,
             processingTime: update.processingTime,
             isUpdated: true, // 添加更新标记用于动画
@@ -77,6 +83,9 @@ export function useWebSocketUpdates(stories: ProcessedItem[], roomType: 'top-sto
             ...story,
             chineseTitle: update.chineseTitle,
             summary: update.summary,
+            category: update.category,
+            tags: update.tags,
+            images: update.images,
             cached: true,
             processingTime: update.processingTime,
             isUpdated: true, // 添加更新标记用于动画

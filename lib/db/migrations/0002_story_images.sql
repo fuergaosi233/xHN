@@ -1,0 +1,1 @@
+ALTER TABLE "processed_stories" ADD COLUMN "images" jsonb;
