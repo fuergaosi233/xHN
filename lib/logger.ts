@@ -108,6 +108,9 @@ if (logToFiles) {
 const winstonLogger = winston.createLogger({
   level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
   transports,
+  // 只记录、不退出：winston 默认 exitOnError=true，一个未处理的 Promise 拒绝
+  // （例如 Next 内部的 "reading 'digest'"）就会杀掉整个服务，k8s 里表现为反复重启
+  exitOnError: false,
   // 未捕获异常与 Promise 拒绝：默认输出到控制台，避免在只读文件系统上崩溃
   exceptionHandlers: [
     logToFiles
