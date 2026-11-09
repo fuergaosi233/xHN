@@ -6,6 +6,7 @@ import { HackerNewsItem } from './hackernews'
 import { wsManager, StoryUpdateEvent } from './websocket'
 import { log } from './logger'
 import { StoryImage, toClientImages } from './images'
+import { warmImages } from './image-cache'
 
 export interface QueueTask {
   id: number
@@ -294,6 +295,10 @@ class QueueManager {
           expiresAt
         }
       })
+
+    // 预热配图缩略图，并通知首页快照合并新结果（快照模块挂在 globalThis 上，避免循环依赖）
+    if (result.images?.length) warmImages(result.images.map(img => img.url))
+    ;(globalThis as any).__xhnSnapshot?.onStoryProcessed()
 
     // 广播WebSocket更新事件
     try {

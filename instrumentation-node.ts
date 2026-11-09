@@ -3,6 +3,7 @@
 import { queueManager } from './lib/queue'
 import { cleanupExpiredCache } from './lib/db'
 import { log } from './lib/logger'
+import { snapshotStore } from './lib/snapshot'
 
 if (process.env.DISABLE_QUEUE_WORKER !== 'true') {
   // 常驻 worker：轮询领取任务（原子领取，多副本安全）
@@ -18,6 +19,9 @@ if (process.env.DISABLE_QUEUE_WORKER !== 'true') {
   setInterval(() => {
     queueManager.cleanupOldTasks(7).catch(() => {})
   }, 24 * 60 * 60 * 1000)
+
+  // 首页榜单快照：启动即构建，之后每 2 分钟刷新，并提前把新上榜文章送去翻译
+  snapshotStore.start()
 
   log.info('Instrumentation registered: queue worker and cleanup timers started')
 }

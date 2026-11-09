@@ -82,7 +82,7 @@ async function fetchJson(url: string): Promise<any> {
 
 export class HackerNewsAPI {
   private cache = new TTLCache()
-  private readonly LIST_CACHE_DURATION = 5 * 60 * 1000 // 榜单缓存 5 分钟
+  private readonly LIST_CACHE_DURATION = 90 * 1000 // 榜单缓存 90 秒（快照每 2 分钟刷新一次）
   private readonly ITEM_CACHE_DURATION = 5 * 60 * 1000
   private readonly NEW_CACHE_DURATION = 60 * 1000 // 最新文章变化快，缓存 1 分钟
   private readonly ITEM_FETCH_CONCURRENCY = 10

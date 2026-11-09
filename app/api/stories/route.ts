@@ -6,6 +6,7 @@ import { processedStories } from '@/lib/db/schema'
 import { inArray } from 'drizzle-orm'
 import { log } from '@/lib/logger'
 import { toClientImages } from '@/lib/images'
+import { snapshotStore, sliceSnapshot } from '@/lib/snapshot'
 
 const hnAPI = new HackerNewsAPI()
 
@@ -16,8 +17,38 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const type = searchParams.get('type') as 'top' | 'best' | 'new' || 'top'
   const page = parseInt(searchParams.get('page') || '0')
-  const limit = parseInt(searchParams.get('limit') || '20')
+  const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '20')))
   
+  // 快路径：后台预构建的榜单快照，命中时几毫秒返回，不现拉 HN、不触发翻译
+  if (['top', 'best', 'new'].includes(type) && searchParams.get('refresh') !== 'true') {
+    try {
+      const snap = await snapshotStore.get(type)
+      if (snap) {
+        const { data, hasMore } = sliceSnapshot(snap, page, limit)
+        const processingCount = data.filter(s => !s.cached).length
+        return NextResponse.json({
+          success: true,
+          data,
+          cached: processingCount === 0,
+          count: data.length,
+          processingCount,
+          queueStatus: { ...snap.queue, completed: 0, failed: 0, activeWorkers: 0, maxConcurrency: 0 },
+          page,
+          limit,
+          hasMore,
+          snapshotAt: snap.builtAt,
+        }, {
+          headers: {
+            // 浏览器可短暂复用；过期后先用旧的、后台再取新的
+            'Cache-Control': 'public, max-age=30, stale-while-revalidate=300'
+          }
+        })
+      }
+    } catch (error) {
+      log.warn('Snapshot read failed, falling back to live fetch', { type, error: error instanceof Error ? error : new Error(String(error)) })
+    }
+  }
+
   try {
     // 获取 Hacker News 数据
     let stories: any[]

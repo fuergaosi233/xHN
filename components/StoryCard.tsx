@@ -128,7 +128,7 @@ function StoryCard({ story, index, view, selected, liked, bookmarked, read, onOp
           {story.descendants}
         </a>
       )}
-      <span>{formatTime(story.time)}</span>
+      <span suppressHydrationWarning>{formatTime(story.time)}</span>
     </div>
   )
 
@@ -230,7 +230,10 @@ function StoryCard({ story, index, view, selected, liked, bookmarked, read, onOp
             srcSet={`${imageSrc(cover.url, 480)} 480w, ${imageSrc(cover.url, 960)} 960w`}
             sizes="(min-width: 1280px) 30vw, (min-width: 768px) 45vw, 100vw"
             alt={cover.caption || story.chineseTitle || story.title}
-            loading="lazy"
+            // 首屏前几张直接加载，其余懒加载
+            loading={index < 6 ? 'eager' : 'lazy'}
+            // React 18 不认识 fetchPriority，用小写原生属性透传
+            {...{ fetchpriority: index < 3 ? 'high' : 'auto' }}
             decoding="async"
             onError={() => setCoverFailed(true)}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
